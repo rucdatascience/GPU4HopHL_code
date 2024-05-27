@@ -1,0 +1,3 @@
+[submodule "GPU_pc/Group4HSDL"]
+	path = GPU_pc/Group4HSDL
+	url = https://github.com/shallowdream2/Group4HSDL.git
