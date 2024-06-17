@@ -33,6 +33,7 @@ rm A
 #include <graph_v_of_v_idealID/read_save/graph_v_of_v_idealID_read.h>
 #include <graph_v_of_v_idealID/read_save/graph_v_of_v_idealID_save.h>
 #include <graph_v_of_v_idealID/graph_v_of_v_idaelID_sort.h>
+#include "graph_v_of_v_idealID/graph_v_of_v_idealID.h"
 
 
 #include <boost/random.hpp>
@@ -160,13 +161,14 @@ void graph_v_of_v_idealID_HB_v2_check_correctness(graph_v_of_v_idealID_two_hop_c
 void test_HBPLL() {
 
     /* problem parameters */
-    int iteration_graph_times = 1e2;
-    int V = 100, E = 500, precision = 1, thread_num = 1;
+    int iteration_graph_times = 1;
+    int V = 100, E = 500, precision = 1, thread_num = 1; //if generate_new_graph=true, set these params
     double ec_min = 1, ec_max = 10;
     int upper_k = 10;
 
     /* test parameters */
-    bool generate_new_graph = true;
+    bool generate_new_graph = false;
+    string data_path = "../../../data/wiki-RfA2.txt";
     bool print_time_details = true;
     bool print_label_before_canonical_fix = false;
     bool print_L = false;
@@ -220,12 +222,13 @@ void test_HBPLL() {
             instance_graph = graph_v_of_v_idealID_sort(instance_graph);
             graph_v_of_v_idealID_save("simple_iterative_tests_HBPLL.txt", instance_graph);
         } else {
-            graph_v_of_v_idealID_read("simple_iterative_tests_HBPLL.txt", instance_graph);
+          graph_v_of_v_idealID_read(data_path.data(), instance_graph);
+          printf("size:%lu\n",instance_graph.size());
         }
 
         auto begin = std::chrono::high_resolution_clock::now();
         try {
-            graph_v_of_v_idealID_HB_v2(instance_graph, V, thread_num, mm);
+            graph_v_of_v_idealID_HB_v2(instance_graph, instance_graph.size(), thread_num, mm);
             if (print_time_details) {
                 total_time_initialization += mm.time_initialization;
                 total_time_reduction += mm.time_reduction;

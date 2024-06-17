@@ -16,17 +16,17 @@ void graph_v_of_v_idealID_read(std::string instance_name, graph_v_of_v_idealID& 
 		{
 			std::vector<std::string> Parsed_content = parse_string(line_content, " ");
 
-			if (!Parsed_content[0].compare("input_graph_size"))
+			if (!Parsed_content[0].compare("|V|="))
 			{
-				int v = std::stoi(Parsed_content[2]);
+				int v = std::stoi(Parsed_content[1]);
                 graph_v_of_v_idealID g(v);
                 input_graph = g;
 			}
-			else if (!Parsed_content[0].compare("input_graph"))
+			else if (!Parsed_content[0].compare("Edge"))
 			{
-				int v1 = std::stoi(Parsed_content[2]);
-				int v2 = std::stoi(Parsed_content[3]);
-				double ec = std::stod(Parsed_content[4]);
+				int v1 = std::stoi(Parsed_content[1]);
+				int v2 = std::stoi(Parsed_content[2]);
+				double ec = std::stod(Parsed_content[3]);
 				graph_v_of_v_idealID_add_edge(input_graph, v1, v2, ec);
 			}
 		}
