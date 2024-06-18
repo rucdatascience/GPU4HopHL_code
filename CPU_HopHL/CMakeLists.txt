@@ -8,23 +8,21 @@ set(CMAKE_CXX_FLAGS
 )
 
 file(GLOB_RECURSE SRC_FILES 
-    "./*.cpp"
     "include/*.h"
+    "./*.cpp"
 )
 
 add_library(${PROJECT_NAME} ${SRC_FILES})
 
 # 包含目录
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
 message("Include directories: ${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 # 链接目录
 # -lcpp_redis -ltacopie -pthread
 target_link_libraries(${PROJECT_NAME} pthread)
 
-
-add_executable(test test.cpp)
+add_executable(test ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp)
 
 # # Custom command to generate dependencies for test.cpp
 # add_custom_command(
