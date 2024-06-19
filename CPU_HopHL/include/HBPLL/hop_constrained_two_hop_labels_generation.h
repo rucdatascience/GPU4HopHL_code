@@ -1,6 +1,6 @@
 #pragma once
 #include <HBPLL/hop_constrained_two_hop_labels.h>
-#include <HBPLL/two_hop_labels.h>
+//#include <HBPLL/two_hop_labels.h>
 #include <boost/heap/fibonacci_heap.hpp>
 #include <graph_v_of_v/graph_v_of_v.h>
 #include <shared_mutex>
@@ -42,12 +42,12 @@ void hop_constrained_clear_global_values() {
 void HSDL_thread_function(int v_k) {
 
   if (labal_size_599 > max_labal_size_599) {
-    throw reach_limit_error_string_MB;
+    //throw reach_limit_error_string_MB;
   }
   if (std::chrono::duration_cast<std::chrono::nanoseconds>(
           std::chrono::high_resolution_clock::now() - begin_time_599)
           .count() > max_run_time_nanoseconds_599) {
-    throw reach_limit_error_string_time;
+    //throw reach_limit_error_string_time;
   }
 
   /* get unique thread id */
@@ -99,7 +99,7 @@ void HSDL_thread_function(int v_k) {
     Q.pop();
     int u = node.hub_vertex;
 
-    if (global_use_rank_prune && v_k > u) {
+    if (v_k > u) {
       continue;
     }
 
@@ -164,57 +164,17 @@ void HSDL_thread_function(int v_k) {
 
         auto &yy = Q_handle_priorities[adj_v][node.hop];
 
-        if (!global_use_2M_prune) {
-          /*directly using the following codes without dist_hop is OK, but is
-           * slower; dist_hop is a pruning technique without increasing the time
-           * complexity*/
-          if (yy.second != std::numeric_limits<int>::max()) {
-            if (yy.second > node.distance) {
-              Q.update(yy.first, node);
-              yy.second = node.distance;
-            }
-          } else {
-            yy = {Q.push(node), node.distance};
-            Q_handle_priorities_changes.push_back({adj_v, node.hop});
+        /*directly using the following codes without dist_hop is OK, but is
+         * slower; dist_hop is a pruning technique without increasing the time
+         * complexity*/
+        if (yy.second != std::numeric_limits<int>::max()) {
+          if (yy.second > node.distance) {
+            Q.update(yy.first, node);
+            yy.second = node.distance;
           }
         } else {
-          if (yy.second <= node.distance) { // adj_v has been reached with a
-                                            // smaller distance and the same hop
-            continue;
-          }
-          if (dist_hop[adj_v].first ==
-              std::numeric_limits<int>::max()) { // adj_v has not been reached
-            yy = {Q.push({node}), node.distance};
-            Q_handle_priorities_changes.push_back({adj_v, node.hop});
-            dist_hop[adj_v].first = node.distance;
-            dist_hop[adj_v].second = node.hop;
-            dist_hop_changes.push_back(adj_v);
-          } else {
-            if (node.distance <
-                dist_hop[adj_v]
-                    .first) { // adj_v has been reached with a larger distance
-              if (yy.second != std::numeric_limits<int>::max()) {
-                Q.update(yy.first, node);
-                yy.second = node.distance;
-              } else {
-                yy = {Q.push(node), node.distance};
-                Q_handle_priorities_changes.push_back({adj_v, node.hop});
-              }
-              dist_hop[adj_v].first = node.distance;
-              dist_hop[adj_v].second = node.hop;
-            } else if (node.hop <
-                       dist_hop[adj_v]
-                           .second) { // adj_v has been reached with a larger
-                                      // distance and a larger hop
-              if (yy.second != std::numeric_limits<int>::max()) {
-                Q.update(yy.first, node);
-                yy.second = node.distance;
-              } else {
-                yy = {Q.push(node), node.distance};
-                Q_handle_priorities_changes.push_back({adj_v, node.hop});
-              }
-            }
-          }
+          yy = {Q.push(node), node.distance};
+          Q_handle_priorities_changes.push_back({adj_v, node.hop});
         }
       }
     }
@@ -245,12 +205,12 @@ void HSDL_thread_function(int v_k) {
 void _2023WWW_thread_function(int v_k) {
 
   if (labal_size_599 > max_labal_size_599) {
-    throw reach_limit_error_string_MB;
+    //throw reach_limit_error_string_MB;
   }
   if (std::chrono::duration_cast<std::chrono::nanoseconds>(
           std::chrono::high_resolution_clock::now() - begin_time_599)
           .count() > max_run_time_nanoseconds_599) {
-    throw reach_limit_error_string_time;
+    //throw reach_limit_error_string_time;
   }
 
   /* get unique thread id */
@@ -305,7 +265,7 @@ void _2023WWW_thread_function(int v_k) {
       if (std::chrono::duration_cast<std::chrono::nanoseconds>(
               std::chrono::high_resolution_clock::now() - begin_time_599)
               .count() > max_run_time_nanoseconds_599) {
-        throw reach_limit_error_string_time;
+        //throw reach_limit_error_string_time;
       }
 
       // if (u < v_k) { // rank pruning
@@ -530,7 +490,7 @@ void hop_constrained_two_hop_labels_generation(
   std::vector<std::future<int>> results;
 
   ideal_graph_599 = input_graph;
-  global_use_rank_prune = case_info.use_rank_prune;
+  //global_use_rank_prune = case_info.use_rank_prune;
 
   auto end = std::chrono::high_resolution_clock::now();
   case_info.time_initialization =
@@ -570,14 +530,14 @@ void hop_constrained_two_hop_labels_generation(
     }
   } else {
     int last_check_vID = N - 1;
-    if (global_use_2M_prune) {
-      for (int v_k = N - 1; v_k >= 0; v_k--) {
-        if (is_mock[v_k]) {
-          last_check_vID = v_k;
-          break;
-        }
-      }
-    }
+    // if (global_use_2M_prune) {
+    //   for (int v_k = N - 1; v_k >= 0; v_k--) {
+    //     if (is_mock[v_k]) {
+    //       last_check_vID = v_k;
+    //       break;
+    //     }
+    //   }
+    // }
     for (int v_k = 0; v_k <= last_check_vID; v_k++) {
       // if (global_use_2M_prune && is_mock[v_k]) {
       //	continue;
@@ -598,7 +558,7 @@ void hop_constrained_two_hop_labels_generation(
       1e9; // s
 
   //----------------------------------------------- step 3:
-  //sortL---------------------------------------------------------------
+  // sortL---------------------------------------------------------------
   begin = std::chrono::high_resolution_clock::now();
 
   case_info.L = hop_constrained_sortL(num_of_threads);
@@ -610,7 +570,7 @@ void hop_constrained_two_hop_labels_generation(
       1e9; // s
 
   //----------------------------------------------- step 4:
-  //canonical_repair---------------------------------------------------------------
+  // canonical_repair---------------------------------------------------------------
   begin = std::chrono::high_resolution_clock::now();
 
   // case_info.print_L();

@@ -108,7 +108,7 @@ public:
     outputFile << "hop_constrained_case_info:" << endl;
     outputFile << "thread_num=" << thread_num << endl;
     outputFile << "upper_k=" << upper_k << endl;
-    outputFile << "use_2M_prune=" << use_2M_prune << endl;
+    //outputFile << "use_2M_prune=" << use_2M_prune << endl;
     outputFile << "use_2023WWW_generation=" << use_2023WWW_generation << endl;
     outputFile << "use_canonical_repair=" << use_canonical_repair << endl;
 

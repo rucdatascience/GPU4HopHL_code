@@ -36,8 +36,8 @@ run.sh)
 
 
 */
-#include <HBPLL/PLL.h>
-#include <HBPLL/two_hop_labels.h>
+//#include <HBPLL/PLL.h>
+//#include <HBPLL/two_hop_labels.h>
 #include <graph_v_of_v/graph_v_of_v.h>
 #include <graph_v_of_v/graph_v_of_v_generate_random_graph.h>
 #include <graph_v_of_v/graph_v_of_v_shortest_paths.h>
@@ -45,11 +45,14 @@ run.sh)
 
 #include <HBPLL/hop_constrained_two_hop_labels_generation.h>
 #include <graph_v_of_v/graph_v_of_v_hop_constrained_shortest_distance.h>
+#include <limits>
 #include <text_mining/binary_save_read_vector.h>
 #include <text_mining/print_items.h>
 
-#define DATASET_PATH "../../data/email-Enron2.txt"
 
+#define DATASET_PATH "../../data/email-Enron2.txt"
+string reach_limit_error_string_MB = "reach limit error MB";
+string reach_limit_error_string_time = "reach limit error time";
 
 boost::random::mt19937 boost_random_time_seed{
     static_cast<std::uint32_t>(std::time(0))};
@@ -68,9 +71,9 @@ void hop_constrained_check_correctness(hop_constrained_case_info &case_info,
   for (int yy = 0; yy < iteration_source_times; yy++) {
     int source = vertex_range(boost_random_time_seed);
 
-    while (!is_mock[source]) {
-      source = vertex_range(boost_random_time_seed);
-    }
+    // while (!is_mock[source]) {
+    //   source = vertex_range(boost_random_time_seed);
+    // }
 
     std::vector<int> distances(instance_graph.size());
 
@@ -82,9 +85,9 @@ void hop_constrained_check_correctness(hop_constrained_case_info &case_info,
     for (int xx = 0; xx < iteration_terminal_times; xx++) {
       int terminal = vertex_range(boost_random_time_seed);
 
-      while (is_mock[terminal]) {
-        terminal = vertex_range(boost_random_time_seed);
-      }
+      // while (is_mock[terminal]) {
+      //   terminal = vertex_range(boost_random_time_seed);
+      // }
 
       int query_dis = hop_constrained_extract_distance(case_info.L, source,
                                                        terminal, hop_cst);
@@ -104,6 +107,9 @@ void hop_constrained_check_correctness(hop_constrained_case_info &case_info,
       vector<pair<int, int>> path = hop_constrained_extract_shortest_path(
           case_info.L, source, terminal, hop_cst);
       int path_dis = 0;
+      if (path.size() == 0 && source != terminal) {
+        path_dis = std::numeric_limits<int>::max();
+      }
       for (auto xx : path) {
         path_dis += instance_graph.edge_weight(xx.first, xx.second);
       }
@@ -132,7 +138,7 @@ void test_HSDL() {
   /* problem parameters */
   int iteration_graph_times = 1, iteration_source_times = 10,
       iteration_terminal_times = 10;
-  int V = 100, E = 500;
+  int V = 10, E = 10;
   int ec_min = 1, ec_max = 10;
 
   bool generate_new_random_graph = 0;
@@ -162,17 +168,16 @@ void test_HSDL() {
       instance_graph = graph_v_of_v_generate_random_graph<int>(
           V, E, ec_min, ec_max, 1, boost_random_time_seed);
       /*add vertex groups*/
-      instance_graph =
-          graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(
-              instance_graph); // sort vertices
+      instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(
+          instance_graph); // sort vertices
       instance_graph.txt_save("simple_iterative_tests.txt");
+
     } else if (load_new_graph) {
       instance_graph.txt_read(DATASET_PATH);
 
-      instance_graph =
-          graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(
-              instance_graph); // sort vertices
-      
+      instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(
+          instance_graph); // sort vertices
+
     } else {
       instance_graph.txt_read("simple_iterative_tests.txt");
     }
