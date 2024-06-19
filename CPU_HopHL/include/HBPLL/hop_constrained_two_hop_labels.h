@@ -52,7 +52,6 @@ public:
   /*hop bounded*/
   int thread_num = 1;
   int upper_k = 0;
-  bool use_2M_prune = false;
   bool use_rank_prune = false;
   bool use_2023WWW_generation = false;
   bool use_canonical_repair = 1;

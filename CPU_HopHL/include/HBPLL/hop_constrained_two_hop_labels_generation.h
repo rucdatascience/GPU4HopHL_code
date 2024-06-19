@@ -156,10 +156,6 @@ void HSDL_thread_function(int v_k) {
       for (auto &xx : ideal_graph_599[u]) {
         int adj_v = xx.first, ec = xx.second;
 
-        if (global_use_2M_prune && P_u + ec >= TwoM_value) {
-          continue;
-        }
-
         /* update node info */
         node.hub_vertex = adj_v;
         node.parent_vertex = u;
@@ -534,7 +530,6 @@ void hop_constrained_two_hop_labels_generation(
   std::vector<std::future<int>> results;
 
   ideal_graph_599 = input_graph;
-  global_use_2M_prune = case_info.use_2M_prune;
   global_use_rank_prune = case_info.use_rank_prune;
 
   auto end = std::chrono::high_resolution_clock::now();

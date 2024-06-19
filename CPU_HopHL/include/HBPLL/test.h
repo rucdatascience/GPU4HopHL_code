@@ -54,24 +54,6 @@ run.sh)
 boost::random::mt19937 boost_random_time_seed{
     static_cast<std::uint32_t>(std::time(0))};
 
-void add_vertex_groups(graph_v_of_v<int> &instance_graph, int group_num) {
-
-  double dummy_edge_probability = 0.2;
-  boost::random::uniform_int_distribution<> dist{static_cast<int>(1),
-                                                 static_cast<int>(100)};
-
-  int N = instance_graph.size();
-
-  instance_graph.ADJs.resize(N + group_num);
-  for (int i = N; i < N + group_num; i++) {
-    for (int j = 0; j < N; j++) {
-      if ((double)dist(boost_random_time_seed) / 100 < dummy_edge_probability) {
-        instance_graph.add_edge(i, j, 1e6); // add a dummy edge
-      }
-    }
-  }
-}
-
 void hop_constrained_check_correctness(hop_constrained_case_info &case_info,
                                        graph_v_of_v<int> &instance_graph,
                                        int iteration_source_times,
@@ -107,8 +89,7 @@ void hop_constrained_check_correctness(hop_constrained_case_info &case_info,
       int query_dis = hop_constrained_extract_distance(case_info.L, source,
                                                        terminal, hop_cst);
 
-      if (abs(query_dis - distances[terminal]) > 1e-4 &&
-          (query_dis < TwoM_value || distances[terminal] < TwoM_value)) {
+      if (abs(query_dis - distances[terminal]) > 1e-4) {
         instance_graph.print();
         case_info.print_L();
         cout << "source = " << source << endl;
@@ -126,8 +107,7 @@ void hop_constrained_check_correctness(hop_constrained_case_info &case_info,
       for (auto xx : path) {
         path_dis += instance_graph.edge_weight(xx.first, xx.second);
       }
-      if (abs(query_dis - path_dis) > 1e-4 &&
-          (query_dis < TwoM_value || distances[terminal] < TwoM_value)) {
+      if (abs(query_dis - path_dis) > 1e-4) {
         instance_graph.print();
         case_info.print_L();
         cout << "source = " << source << endl;
@@ -152,7 +132,7 @@ void test_HSDL() {
   /* problem parameters */
   int iteration_graph_times = 1, iteration_source_times = 10,
       iteration_terminal_times = 10;
-  int V = 100, E = 500, group_num = 10;
+  int V = 100, E = 500;
   int ec_min = 1, ec_max = 10;
 
   bool generate_new_random_graph = 0;
@@ -161,7 +141,6 @@ void test_HSDL() {
   /* hop bounded info */
   hop_constrained_case_info mm;
   mm.upper_k = 5;
-  mm.use_2M_prune = 0;
   mm.use_rank_prune = 1;
   mm.use_2023WWW_generation = 0;
   mm.use_canonical_repair = 1;
@@ -183,44 +162,19 @@ void test_HSDL() {
       instance_graph = graph_v_of_v_generate_random_graph<int>(
           V, E, ec_min, ec_max, 1, boost_random_time_seed);
       /*add vertex groups*/
-      if (group_num > 0) {
-        add_vertex_groups(instance_graph, group_num);
-      }
-      is_mock.resize(V + group_num);
-      for (int j = 0; j < V; j++) {
-        is_mock[j] = false;
-      }
-      for (int j = 0; j < group_num; j++) {
-        is_mock[V + j] = true;
-      }
       instance_graph =
-          graph_v_of_v_update_vertexIDs_by_degrees_large_to_small_mock(
-              instance_graph, is_mock); // sort vertices
+          graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(
+              instance_graph); // sort vertices
       instance_graph.txt_save("simple_iterative_tests.txt");
-      binary_save_vector("simple_iterative_tests_is_mock.txt", is_mock);
     } else if (load_new_graph) {
       instance_graph.txt_read(DATASET_PATH);
 
-      if (group_num > 0) {
-        add_vertex_groups(instance_graph, group_num);
-      }
-      is_mock.resize(V + group_num);
-      for (int j = 0; j < V; j++) {
-        is_mock[j] = false;
-      }
-      for (int j = 0; j < group_num; j++) {
-        is_mock[V + j] = true;
-      }
-
       instance_graph =
-          graph_v_of_v_update_vertexIDs_by_degrees_large_to_small_mock(
-              instance_graph, is_mock); // sort vertices
-    binary_save_vector("simple_iterative_tests_is_mock.txt", is_mock);
-
+          graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(
+              instance_graph); // sort vertices
       
     } else {
       instance_graph.txt_read("simple_iterative_tests.txt");
-      binary_read_vector("simple_iterative_tests_is_mock.txt", is_mock);
     }
 
     // instance_graph.print();
