@@ -49,7 +49,7 @@ run.sh)
 #include <text_mining/binary_save_read_vector.h>
 #include <text_mining/print_items.h>
 
-#define DATASET_PATH "../../data/email-Enron2.txt"
+#define DATASET_PATH "../../data/euroroad2.txt"
 string reach_limit_error_string_MB = "reach limit error MB";
 string reach_limit_error_string_time = "reach limit error time";
 
@@ -151,7 +151,8 @@ void test_HSDL()
 	mm.use_2023WWW_generation = 0;
 	mm.use_canonical_repair = 1;
 	mm.max_run_time_seconds = 10;
-	mm.thread_num = 10;
+    mm.thread_num = 10;
+    
 
 	/* result info */
 	double avg_index_time = 0;
@@ -212,7 +213,7 @@ void test_HSDL()
 		avg_index_size_per_v = avg_index_size_per_v + (double)index_size / V / iteration_graph_times;
 
 		hop_constrained_check_correctness(mm, instance_graph, iteration_source_times, iteration_terminal_times, mm.upper_k);
-
+		mm.print_L();
 		mm.clear_labels();
 	}
 
