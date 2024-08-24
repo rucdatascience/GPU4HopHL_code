@@ -1,0 +1,86 @@
+#ifndef GLOBAL_LABELS_V2_CUH
+#define GLOBAL_LABELS_V2_CUH
+
+#include "definition/hub_def.h"
+#include "label/hop_constrained_two_hop_labels.cuh"
+#include "memoryManagement/cuda_vector_v2.cuh"
+#include "memoryManagement/mmpool_v2.cuh"
+#include <cuda_runtime.h>
+
+class hop_constrained_case_info_v2 {
+public:
+    /*labels*/
+    mmpool_v2<hub_type> *mmpool_labels;
+    mmpool_v2<hub_type> *mmpool_T0;
+    mmpool_v2<hub_type> *mmpool_T1;
+
+    cuda_vector_v2<hub_type> *L_cuda; // gpu res
+    cuda_vector_v2<hub_type> *T0; // T0
+    cuda_vector_v2<hub_type> *T1; // T1
+
+    vector<vector<hub_type>> L_cpu; // cpu res
+
+    size_t L_size;
+
+    // 构造函数
+    // mmpool_size_block 就是一共要存的元素个数，/ nodes_per_block 即为需要的 block 数
+    __host__ void init (const int vertex_nums, const int mmpool_size_block, const int hop_cst) {
+        L_size = vertex_nums;
+
+        // 创建三个内存池
+        // 第一个内存池用来存 label
+        cudaMallocManaged(&mmpool_labels, sizeof(mmpool_v2<hub_type>));
+        new (mmpool_labels) mmpool_v2<hub_type>(vertex_nums, mmpool_size_block / nodes_per_block);
+        // 第二个内存池用来存 T0
+        cudaMallocManaged(&mmpool_T0, sizeof(mmpool_v2<hub_type>));
+        new (mmpool_T0) mmpool_v2<hub_type>(vertex_nums, mmpool_size_block / nodes_per_block);
+        // 第三个内存池用来存 T1
+        cudaMallocManaged(&mmpool_T1, sizeof(mmpool_v2<hub_type>));
+        new (mmpool_T1) mmpool_v2<hub_type>(vertex_nums, mmpool_size_block / nodes_per_block);
+        cudaDeviceSynchronize();
+        
+        // 分配 L_cuda 内存池
+        cudaMallocManaged(&L_cuda, vertex_nums * sizeof(cuda_vector_v2<hub_type>)); // 分配n个cuda_vector指针
+        for (int i = 0; i < vertex_nums; i++) {
+            new (L_cuda + i) cuda_vector_v2<hub_type>(mmpool_labels, i, (hop_cst * vertex_nums) / nodes_per_block + 1); // 调用构造函数
+        }
+        // 分配 T0 内存池
+        cudaMallocManaged(&T0, vertex_nums * sizeof(cuda_vector_v2<hub_type>)); // 分配n个cuda_vector指针
+        for (int i = 0; i < vertex_nums; i++) {
+            new (T0 + i) cuda_vector_v2<hub_type>(mmpool_T0, i, (hop_cst * vertex_nums) / nodes_per_block + 1); // 调用构造函数
+        }
+        // 分配 T1 内存池
+        cudaMallocManaged(&T1, vertex_nums * sizeof(cuda_vector_v2<hub_type>)); // 分配n个cuda_vector指针
+        for (int i = 0; i < vertex_nums; i++) {
+            new (T1 + i) cuda_vector_v2<hub_type>(mmpool_T1, i, (hop_cst * vertex_nums) / nodes_per_block + 1); // 调用构造函数
+        }
+        cudaDeviceSynchronize();
+    }
+
+    // label 中的点数
+    inline size_t cuda_vector_size() {
+        return L_size;
+    }
+    
+    // 析构函数
+    __host__ void destroy_L_cuda() {
+        for (int i = 0; i < L_size; i++) {
+            L_cuda[i].~cuda_vector_v2<hub_type>();
+            T0[i].~cuda_vector_v2<hub_type>();
+            T1[i].~cuda_vector_v2<hub_type>();
+        }
+        cudaFree(L_cuda);
+        cudaFree(T0);
+        cudaFree(T1);
+
+        mmpool_labels->~mmpool_v2();
+        mmpool_T0->~mmpool_v2();
+        mmpool_T1->~mmpool_v2();
+        cudaFree(mmpool_labels);
+        cudaFree(mmpool_T0);
+        cudaFree(mmpool_T1);
+    }
+
+};
+
+#endif
