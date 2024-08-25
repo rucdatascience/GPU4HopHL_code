@@ -98,7 +98,7 @@ int main () {
     hop_constrained_case_info info_cpu;
     info_cpu.upper_k = upper_k;
 	info_cpu.use_rank_prune = 1;
-	info_cpu.use_2023WWW_generation = 0;
+	info_cpu.use_2023WWW_generation = 1;
 	info_cpu.use_canonical_repair = 1;
 	info_cpu.max_run_time_seconds = 10;
     info_cpu.thread_num = 10;

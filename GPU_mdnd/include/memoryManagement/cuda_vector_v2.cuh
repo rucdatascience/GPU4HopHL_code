@@ -31,7 +31,7 @@ public:
     __host__ ~cuda_vector_v2();
 
     // 加入一个元素
-    __device__ bool push_back(const int &vid, const T &value);
+    __device__ bool push_back(const T &value);
     
     // 获取元素
     __device__ __host__ T *get(size_t index);
@@ -62,7 +62,7 @@ template <typename T> __host__ cuda_vector_v2<T>::cuda_vector_v2(mmpool_v2<T> *p
     this->block_idx_array[this->blocks_num++] = idx;
 };
 
-template <typename T> __device__ bool cuda_vector_v2<T>::push_back(const int &vid, const T &value) {
+template <typename T> __device__ bool cuda_vector_v2<T>::push_back(const T &value) {
 
     // 互斥锁
     while (atomicCAS(&this->lock, 0, 1) != 0);

@@ -11,7 +11,42 @@
 
 using namespace std;
 
-/* label format */
+/* T队列中元素类型 */
+struct T_item {
+    int vertex;
+    weight_type distance;
+
+    __device__ __host__ T_item(int vertex, weight_type distance)
+    : vertex(vertex), distance(distance) {}
+
+    __device__ __host__ T_item() {}
+
+    T_item(const T_item &other) {
+        vertex = other.vertex;
+        distance = other.distance;
+    }
+
+};
+
+/* 标签类型 v3 */
+struct hop_constrained_two_hop_label_v3 {
+    int hub_vertex, hop;
+    weight_type distance;
+
+    __device__ __host__ hop_constrained_two_hop_label_v3(int hub_vertex, int hop, weight_type distance)
+    : hub_vertex(hub_vertex), hop(hop), distance(distance) {}
+
+    __device__ __host__ hop_constrained_two_hop_label_v3() {}
+
+    hop_constrained_two_hop_label_v3(const hop_constrained_two_hop_label_v3 &other) {
+        hub_vertex = other.hub_vertex;
+        hop = other.hop;
+        distance = other.distance;
+    }
+
+};
+
+/* 标签类型 */
 struct hop_constrained_two_hop_label_v2 {
     int hub_vertex, parent_vertex, hop;
     weight_type distance;

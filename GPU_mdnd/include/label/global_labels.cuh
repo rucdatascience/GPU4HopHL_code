@@ -95,12 +95,12 @@ public:
         disType min_dis = (int)(1e9);
         for (auto &it1 : start_set) {
             for (auto &it2 : end_set) {
-            if (it1.hub_vertex == it2.hub_vertex && it1.hop + it2.hop <= hop_cst) {
-                disType dis = it1.distance + it2.distance;
-                if (dis < min_dis) {
-                min_dis = dis;
+                if (it1.hub_vertex == it2.hub_vertex && it1.hop + it2.hop <= hop_cst) {
+                    disType dis = it1.distance + it2.distance;
+                    if (dis < min_dis) {
+                    min_dis = dis;
+                    }
                 }
-            }
             }
         }
         return min_dis;

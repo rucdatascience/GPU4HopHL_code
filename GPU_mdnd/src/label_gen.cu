@@ -1,7 +1,7 @@
 #include "label/gen_label.cuh"
 
 // 通过 hashtable 的快速查询
-__device__ int query_dis_by_hash_table (int u, int v, cuda_hashTable_v2<int> *H, cuda_vector_v2<hub_type> *L, int hop_now, int hop_cst) {
+__device__ int query_dis_by_hash_table (int u, int v, cuda_hashTable_v2<weight_type> *H, cuda_vector_v2<hub_type> *L, int hop_now, int hop_cst) {
     int min_dis = 1e9;
 
     for (int i = 0; i < L->blocks_num; ++i) {
@@ -19,17 +19,17 @@ __device__ int query_dis_by_hash_table (int u, int v, cuda_hashTable_v2<int> *H,
 }
 
 // 初始化 T
-__global__ void init_T (int V, cuda_vector_v2<hub_type> *T, cuda_vector_v2<hub_type> *L_gpu) {
+__global__ void init_T (int V, cuda_vector_v2<T_item> *T, cuda_vector_v2<hub_type> *L_gpu) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < V) {
-        // start_vertex, target_vertex, hop, distance
-        T[tid].push_back(tid, {tid, tid, 0, 0});
-        L_gpu[tid].push_back(tid, {tid, tid, 0, 0});
+        // target_vertex, distance
+        T[tid].push_back({tid, 0});
+        L_gpu[tid].push_back({tid, 0, 0});
     }
 }
 
 // 清空 T
-__global__ void clear_T (int V, cuda_vector_v2<hub_type> *T) {
+__global__ void clear_T (int V, cuda_vector_v2<T_item> *T) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < V) {
         T[tid].init(V, tid);
@@ -38,19 +38,19 @@ __global__ void clear_T (int V, cuda_vector_v2<hub_type> *T) {
 
 // 索引生成过程
 __global__ void gen_label_hsdl (int V, int thread_num, int hop_cst, int hop_now, int* out_pointer, int* out_edge, int* out_edge_weight,
-            cuda_hashTable_v2<int> *Has, cuda_vector_v2<hub_type> *L_gpu, cuda_vector_v2<hub_type> *T0, cuda_vector_v2<hub_type> *T1) {
+            cuda_hashTable_v2<weight_type> *Has, cuda_vector_v2<hub_type> *L_gpu, cuda_vector_v2<T_item> *T0, cuda_vector_v2<T_item> *T1) {
     
     // 线程id
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     
     // hash table
-    cuda_hashTable_v2<int> *has = (Has + tid);
+    cuda_hashTable_v2<weight_type> *has = (Has + tid);
 
     for (int node_id = tid; node_id < V; node_id += thread_num) {
 
         // node_id 的 T 队列
-        cuda_vector_v2<hub_type> *t0 = (T0 + node_id);
-        cuda_vector_v2<hub_type> *t1 = (T1 + node_id);
+        cuda_vector_v2<T_item> *t0 = (T0 + node_id);
+        cuda_vector_v2<T_item> *t1 = (T1 + node_id);
 
         // node_id 的 label
         cuda_vector_v2<hub_type> *L = (L_gpu + node_id);
@@ -72,11 +72,11 @@ __global__ void gen_label_hsdl (int V, int thread_num, int hop_cst, int hop_now,
             for (int j = 0; j < block_siz; ++j) {
 
                 // 获取 T 队列元素
-                hub_type *x = t0->pool->get_node(block_id, j);
+                T_item *x = t0->pool->get_node(block_id, j);
 
                 // sv 为起点, ev 为遍历到的点, dis 为距离，hop 为跳数
-                int sv = x->hub_vertex, ev = x->parent_vertex;
-                int dis = x->distance, h = x->hop;
+                int sv = node_id, ev = x->vertex, h = hop_now;
+                weight_type dis = x->distance;
 
                 // 遍历节点 ev 并扩展
                 for (int k = out_pointer[ev]; k < out_pointer[ev + 1]; ++k) {
@@ -87,14 +87,14 @@ __global__ void gen_label_hsdl (int V, int thread_num, int hop_cst, int hop_now,
 
                     // h 为现在这些标签的跳数， h + 1为现在要添加的标签跳数
                     int dv = dis + out_edge_weight[k];
-                    int q_dis = query_dis_by_hash_table(sv, v, Has + tid, L_gpu + v, h + 1, hop_cst);
+                    weight_type q_dis = query_dis_by_hash_table(sv, v, Has + tid, L_gpu + v, h + 1, hop_cst);
                     
                     if (dv < q_dis) {
                         // printf("dv q_dis: %d %d\n", dv, q_dis);
 
-                        // 现在的 label 还保留了原本格式后面label和T的元素类型还要再改。
-                        L_gpu[v].push_back(0, {sv, ev, h + 1, dv});
-                        t1->push_back(0, {sv, v, h + 1, dv});
+                        // 添加标签并压入 T 队列
+                        L_gpu[v].push_back({sv, h + 1, dv});
+                        t1->push_back({v, dv});
                     }
 
                 }
@@ -224,7 +224,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
             for (int j = 0; j < block_siz; ++j) {
                 hub_type* x = info->L_cuda[v].pool->get_node(block_id, j);
                 // printf("{%d, %d, %d, %d}, ", x->hub_vertex, x->parent_vertex, x->hop, x->distance);
-                L[v].push_back({x->hub_vertex, x->parent_vertex, x->hop, x->distance});
+                L[v].push_back({x->hub_vertex, x->hop, x->distance});
                 info->label_size ++;
                 mx_hop = max(mx_hop, x->hop);
             }
