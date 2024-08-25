@@ -2,7 +2,7 @@
 #define TEST_MMPOOL_CUH
 
 #include "definition/hub_def.h"
-#include "label/hop_constrained_two_hop_labels.cuh"
+#include "label/hop_constrained_two_hop_labels_v2.cuh"
 #include "memoryManagement/cuda_hashtable_v2.cuh"
 #include "memoryManagement/cuda_vector_v2.cuh"
 #include "memoryManagement/mmpool_v2.cuh"

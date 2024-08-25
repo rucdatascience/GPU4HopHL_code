@@ -8,7 +8,7 @@
 // cuda_hashTable_v2
 template <typename ValueType> class cuda_hashTable_v2 {
 public:
-    ValueType *table;
+    ValueType *table = NULL;
     int capacity;
 
     // ¹¹Ôìº¯Êý

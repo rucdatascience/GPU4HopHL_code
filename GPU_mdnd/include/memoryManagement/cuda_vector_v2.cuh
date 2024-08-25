@@ -8,18 +8,18 @@
 #include <cuda_runtime.h>
 // include log
 #include "definition/hub_def.h"
-#include "label/hop_constrained_two_hop_labels.cuh"
+#include "label/hop_constrained_two_hop_labels_v2.cuh"
 #include <iostream>
 
 //#define data_type hop_constrained_two_hop_label
 
 template <typename T> class cuda_vector_v2 {
 public:
-    mmpool_v2<T> *pool;
+    mmpool_v2<T> *pool = NULL;
     size_t current_size;
     size_t capacity;      // 当前vector的容量, 以块为单位
 
-    int *block_idx_array; // unified memory
+    int *block_idx_array = NULL; // unified memory
     int now_block; // 记录当前最后一个 block 的id
     int blocks_num;
     int lock;

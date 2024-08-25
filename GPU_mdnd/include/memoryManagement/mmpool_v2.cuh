@@ -12,8 +12,8 @@ public:
     struct block {
         T data[nodes_per_block];
     }; // 一个块的元素
-    block *blocks_pool; // 指向预分配的所有节点的指针
-    int *blocks_state; // 当前块的状态，0为未使用，-x表示使用了x个，+y表示下一个块的位置是y
+    block *blocks_pool = NULL; // 指向预分配的所有节点的指针
+    int *blocks_state = NULL; // 当前块的状态，0为未使用，-x表示使用了x个，+y表示下一个块的位置是y
     int num_blocks; // 块的数量
     int last_empty_block_idx; // 最后一个空块的索引
 
@@ -39,7 +39,7 @@ public:
     __host__ __device__ T *get_node(const int &block_idx, const int &node_idx);
 
     // 获取一个新的块
-    __host__ __device__ int get_new_block(const int &block_idx);
+    __device__ int get_new_block(const int &block_idx);
 
     // 获取块大小
     __host__ __device__ int get_block_size(const int &block_idx);
@@ -132,7 +132,7 @@ template <typename T> __device__ bool mmpool_v2<T>::push_node(const int &block_i
 }
 
 // 获取一个新块，前一个块是 block_idx
-template <typename T> __host__ __device__ int mmpool_v2<T>::get_new_block(const int &block_idx) {
+template <typename T> __device__ int mmpool_v2<T>::get_new_block(const int &block_idx) {
     while (atomicCAS(&this->lock, 0, 1) != 0);
     // printf("a new block!! %d %d %d\n", block_idx, last_empty_block_idx, num_blocks);
     blocks_state[last_empty_block_idx] = 0;

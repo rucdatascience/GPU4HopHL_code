@@ -2,7 +2,7 @@
 #define GLOBAL_LABELS_CUH
 
 #include "definition/hub_def.h"
-#include "label/hop_constrained_two_hop_labels.cuh"
+#include "label/hop_constrained_two_hop_labels_v2.cuh"
 #include "memoryManagement/cuda_hashTable.cuh"
 #include "memoryManagement/cuda_vector.cuh"
 #include "memoryManagement/mmpool.cuh"
@@ -20,11 +20,11 @@ using namespace std;
 class hop_constrained_case_info {
 public:
     /*labels*/
-    mmpool<hub_type> *mmpool_labels;
-    cuda_vector<hub_type> *L_cuda;           // gpu res
-    int *group;                              //存放对应group的顶点
-    cuda_hashTable<int, int> *reflect_group; //存放group中的顶点在group中的位置
-    vector<unordered_set<hub_type>> *final_label;
+    mmpool<hub_type> *mmpool_labels = NULL;
+    cuda_vector<hub_type> *L_cuda = NULL;           // gpu res
+    int *group = NULL;                              //存放对应group的顶点
+    cuda_hashTable<int, int> *reflect_group = NULL; //存放group中的顶点在group中的位置
+    vector<unordered_set<hub_type>> *final_label = NULL;
     // vector<vector<hub_type>> L_cpu; // cpu res
     size_t L_size;
 
@@ -38,6 +38,7 @@ public:
         mmpool_labels->~mmpool();
         cudaFree(mmpool_labels);
     };
+    
     void init_group(std::vector<int> &group, graph_v_of_v<disType> &G, int hop_cst) {
         //将group中的顶点，及顶点的邻点存到group中
 

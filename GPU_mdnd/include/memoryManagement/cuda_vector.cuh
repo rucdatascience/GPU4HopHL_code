@@ -19,13 +19,13 @@ inline __host__ __device__ void mylog(const char *message) {
 
 template <typename T> class cuda_vector {
 public:
-    mmpool<T> *pool;
+    mmpool<T> *pool = NULL;
     size_t current_size;
     size_t capacity;      // 当前vector的容量, 以块为单位
-    int *block_idx_array; // unified memory
+    int *block_idx_array = NULL; // unified memory
     size_t blocks;
     int lock;
-    T *first_elements; // unified memory
+    T *first_elements = NULL; // unified memory
                         // ptr,在thrust中排序后，将数据拷贝到这里，以便在device中使用
 
     __host__ cuda_vector(mmpool<T> *pool, size_t capacity = 100); // 初始块大小可以根据需求调整

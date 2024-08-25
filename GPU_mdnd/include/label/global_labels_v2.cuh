@@ -2,7 +2,7 @@
 #define GLOBAL_LABELS_V2_CUH
 
 #include "definition/hub_def.h"
-#include "label/hop_constrained_two_hop_labels.cuh"
+#include "label/hop_constrained_two_hop_labels_v2.cuh"
 #include "memoryManagement/cuda_vector_v2.cuh"
 #include "memoryManagement/mmpool_v2.cuh"
 #include <cuda_runtime.h>
@@ -10,15 +10,27 @@
 class hop_constrained_case_info_v2 {
 public:
     /*labels*/
-    mmpool_v2<hub_type> *mmpool_labels;
-    mmpool_v2<hub_type> *mmpool_T0;
-    mmpool_v2<hub_type> *mmpool_T1;
+    mmpool_v2<hub_type> *mmpool_labels = NULL;
+    mmpool_v2<hub_type> *mmpool_T0 = NULL;
+    mmpool_v2<hub_type> *mmpool_T1 = NULL;
 
-    cuda_vector_v2<hub_type> *L_cuda; // gpu res
-    cuda_vector_v2<hub_type> *T0; // T0
-    cuda_vector_v2<hub_type> *T1; // T1
+    cuda_vector_v2<hub_type> *L_cuda = NULL; // gpu res
+    cuda_vector_v2<hub_type> *T0 = NULL; // T0
+    cuda_vector_v2<hub_type> *T1 = NULL; // T1
 
     vector<vector<hub_type>> L_cpu; // cpu res
+
+    /*hop bounded*/
+    int thread_num = 1;
+    int upper_k = 0;
+    
+    /*running time records*/
+	double time_initialization = 0;
+	double time_generate_labels = 0;
+	double time_sortL = 0;
+	double time_canonical_repair = 0;
+	double time_total = 0;
+    double label_size = 0;
 
     size_t L_size;
 
@@ -62,6 +74,24 @@ public:
         return L_size;
     }
     
+    // ~hop_constrained_case_info_v2() {
+    //     for (int i = 0; i < L_size; i++) {
+    //         L_cuda[i].~cuda_vector_v2<hub_type>();
+    //         T0[i].~cuda_vector_v2<hub_type>();
+    //         T1[i].~cuda_vector_v2<hub_type>();
+    //     }
+    //     cudaFree(L_cuda);
+    //     cudaFree(T0);
+    //     cudaFree(T1);
+
+    //     mmpool_labels->~mmpool_v2();
+    //     mmpool_T0->~mmpool_v2();
+    //     mmpool_T1->~mmpool_v2();
+    //     cudaFree(mmpool_labels);
+    //     cudaFree(mmpool_T0);
+    //     cudaFree(mmpool_T1);
+    // }
+
     // Îö¹¹º¯Êý
     __host__ void destroy_L_cuda() {
         for (int i = 0; i < L_size; i++) {

@@ -12,13 +12,13 @@
 
 template <typename T> class cuda_queue {
 public:
-    mmpool<T> *pool;
-    cuda_vector<T> *data;
+    mmpool<T> *pool = NULL;
+    cuda_vector<T> *data = NULL;
 
-    int *front; // 队首索引所在的block idx
-    int *rear;  // 队尾索引所在的block idx
-    int *start; // 每个block的起始索引
-    int *end;   // 每个block的结束索引
+    int *front = NULL; // 队首索引所在的block idx
+    int *rear = NULL;  // 队尾索引所在的block idx
+    int *start = NULL; // 每个block的起始索引
+    int *end = NULL;   // 每个block的结束索引
     size_t size; //最大的block数，可以设置很大
 
     cuda_queue(size_t size, mmpool<T> *pool) : pool(pool) {

@@ -12,6 +12,8 @@
 #include <graph_v_of_v/graph_v_of_v_hop_constrained_shortest_distance.h>
 #include <graph_v_of_v/graph_v_of_v_update_vertexIDs_by_degrees_large_to_small.h>
 
+#include <HBPLL/hop_constrained_two_hop_labels_generation.h>
+
 boost::random::mt19937 boost_random_time_seed{static_cast<std::uint32_t>(std::time(0))}; // 随机种子 
 
 void graph_v_of_v_to_LDBC (LDBC<weight_type> &graph, graph_v_of_v<int> &input_graph) {
@@ -71,7 +73,7 @@ void GPU_HSDL_checker (hop_constrained_case_info_v2 *info,  vector<vector<hub_ty
                     cout << endl;
                     return;
                 }else{
-                    cout << "correct !!!" << endl;
+                    // cout << "correct !!!" << endl;
                     // cout << "source, terminal, hopcst = " << source << ", "<< terminal << ", " << hop_cst << endl;
                     // cout << fixed << setprecision(5) << "dis = " << q_dis << endl;
                     // cout << fixed << setprecision(5) << "distances[terminal] = " << distances[terminal] << endl;
@@ -92,12 +94,21 @@ int main () {
     // 样例图参数
     int V = 1000, E = 5000, upper_k = 5;
     double ec_min = 1, ec_max = 10;
-    hop_constrained_case_info_v2 *info = NULL;
+
+    hop_constrained_case_info info_cpu;
+    info_cpu.upper_k = upper_k;
+	info_cpu.use_rank_prune = 1;
+	info_cpu.use_2023WWW_generation = 0;
+	info_cpu.use_canonical_repair = 1;
+	info_cpu.max_run_time_seconds = 10;
+    info_cpu.thread_num = 10;
+
+    hop_constrained_case_info_v2 *info_gpu = new hop_constrained_case_info_v2();
 
     /* test parameters */
     bool generate_new_graph = true;
-    bool print_time_details = true;
-    bool check_correctness = true;
+    bool print_details = true;
+    bool check_correctness = false;
     bool print_L = false;
 
     vector<vector<hub_type> > L;
@@ -121,11 +132,13 @@ int main () {
         graph_v_of_v_to_LDBC(graph, instance_graph);
         CSR_graph<weight_type> csr_graph = toCSR(graph);
         
-        label_gen(csr_graph, info, upper_k, L);
+        // label generation CPU 和 GPU 区别
+        label_gen(csr_graph, info_gpu, upper_k, L);
+        hop_constrained_two_hop_labels_generation(instance_graph, info_cpu);
 
         // 检验正确性
         if (check_correctness) {
-            GPU_HSDL_checker(info, L, instance_graph, iteration_source_times, iteration_terminal_times, upper_k);
+            GPU_HSDL_checker(info_gpu, L, instance_graph, iteration_source_times, iteration_terminal_times, upper_k);
         }
 
         // 输出标签
@@ -135,9 +148,12 @@ int main () {
 
     }
     
-    // 输出计时
-    if (print_time_details) {
-
+    // 输出详细记录
+    if (print_details) {
+        printf("CPU Lable Size: %.5lf\n", info_cpu.label_size);
+        printf("GPU Lable Size: %.5lf\n", info_gpu->label_size);
+        printf("CPU Time Generation: %.5lf\n", info_cpu.time_generate_labels);
+        printf("GPU Time Generation: %.5lf\n", info_gpu->time_generate_labels);
     }
 
     return 0;

@@ -1,7 +1,7 @@
 #ifndef hub_def_H
 #define hub_def_H
 
-#define hub_type hop_constrained_two_hop_label
+#define hub_type hop_constrained_two_hop_label_v2
 #define disType int
 typedef disType weight_type;
 

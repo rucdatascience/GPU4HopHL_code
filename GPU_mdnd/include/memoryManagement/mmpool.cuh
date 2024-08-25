@@ -20,9 +20,9 @@
 template <typename T> class mmpool {
 
 public:
-    T *nodes_pool;         // 指向预分配的所有节点的指针
-    int *block_used_nodes; // 每个块中已使用节点的数量
-    int *block_next_index; // 下一个块的索引
+    T *nodes_pool = NULL;         // 指向预分配的所有节点的指针
+    int *block_used_nodes = NULL; // 每个块中已使用节点的数量
+    int *block_next_index = NULL; // 下一个块的索引
     int num_blocks;        // 块的数量
     // int nodes_per_block;   // 每个块的节点数量,-1表示未分配
     // int now_empty_block_idx;

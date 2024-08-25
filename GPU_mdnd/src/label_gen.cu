@@ -55,7 +55,7 @@ __global__ void gen_label_hsdl (int V, int thread_num, int hop_cst, int hop_now,
         // node_id 的 label
         cuda_vector_v2<hub_type> *L = (L_gpu + node_id);
 
-        // 初始化 hashtable，就是遍历 label集合并一一修改在 hashtable 中的值
+        // 初始化 hashtable，就是遍历 label 集合并一一修改在 hashtable 中的值
         for (int i = 0; i < L->blocks_num; ++i) {
             int block_id = L->block_idx_array[i];
             int block_siz = L->pool->get_block_size(block_id);
@@ -130,7 +130,6 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     printf("V, E: %d, %d\n", V, E);
 
     // 准备 info
-    info = new hop_constrained_case_info_v2();
     info->init(V, V * V * hop_cst, hop_cst);
     printf("init case_info success\n");
 
@@ -168,7 +167,13 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 
     while (1) {
 
-        if (iter++ > hop_cst + 1) break;
+        if (iter++ >= hop_cst) break;
+        // iter = 1 -> 生成 跳数 1
+        // iter = 2 -> 生成 跳数 2
+        // iter = 3 -> 生成 跳数 3
+        // iter = 4 -> 生成 跳数 4
+        // iter = 5 -> 生成 跳数 5
+        
         printf("iteration_hop: %d\n", iter);
 
         // 根据奇偶性，轮流使用 T0、T1，不需要交换指针
@@ -188,24 +193,29 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
             clear_T <<<dimGrid, dimBlock>>> (V, info->T1);
         }
         cudaDeviceSynchronize();
+        cudaEventRecord(stop, 0);
+        cudaEventSynchronize(stop);
+        cudaEventElapsedTime(&elapsedTime, start, stop);
+        printf("Time generation in hop %d : %.5lf s\n", iter, elapsedTime / 1000.0);
 
     }
-    // cudaError_t err;
-    // err = cudaGetLastError(); // 检查内核内存申请错误
-    // if (err != cudaSuccess) {
-    //     printf("!INIT CUDA ERROR: %s\n", cudaGetErrorString(err));
-    // }
+    cudaError_t err;
+    err = cudaGetLastError(); // 检查内核内存申请错误
+    if (err != cudaSuccess) {
+        printf("!INIT CUDA ERROR: %s\n", cudaGetErrorString(err));
+    }
     
     // timer record
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsedTime, start, stop);
-    printf("Time generation: %.8f s\n", elapsedTime / 1000.0);
+    printf("Time generation: %.5f s\n", elapsedTime / 1000.0);
+    info->time_generate_labels = elapsedTime / 1000.0;
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
     printf("hub, parent, hop, dis:\n");
-    int cnt_label = 0;
+    int mx_hop = 0;
     for (int v = 0; v < V; ++v) {
         // printf("vertex %d\n", v);
         for (int i = 0; i < info->L_cuda[v].blocks_num; ++i) {
@@ -215,15 +225,23 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
                 hub_type* x = info->L_cuda[v].pool->get_node(block_id, j);
                 // printf("{%d, %d, %d, %d}, ", x->hub_vertex, x->parent_vertex, x->hop, x->distance);
                 L[v].push_back({x->hub_vertex, x->parent_vertex, x->hop, x->distance});
-                cnt_label ++;
+                info->label_size ++;
+                mx_hop = max(mx_hop, x->hop);
             }
         }
         // printf("\n");
     }
-    printf("average label size: %.5lf\n", (double)cnt_label / (double)V);
+    printf("max hop: %d\n", mx_hop);
+    info->label_size = info->label_size / (double)V;
+    printf("average label size: %.5lf\n", info->label_size);
     printf("Generation end!\n");
 
     info->destroy_L_cuda();
+    
+    for(int i = 0; i < thread_num; ++i){
+        L_hash[i].~cuda_hashTable_v2();
+    }
+    cudaFree(L_hash);
     
     return;
 }
