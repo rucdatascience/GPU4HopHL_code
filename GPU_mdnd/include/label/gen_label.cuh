@@ -14,12 +14,16 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 vector<vector<hub_type> >&L);
 
 __global__ void gen_label_hsdl (int V, int thread_num, int hop_cst, int hop_now, int* out_pointer, int* out_edge, int* out_edge_weight,
-            cuda_hashTable_v2<weight_type> *Has, cuda_vector_v2<hub_type> *L_gpu, cuda_vector_v2<T_item> *T0, cuda_vector_v2<T_item> *T1);
+         cuda_vector_v2<hub_type> *L_gpu, cuda_hashTable_v2<weight_type> *Has, cuda_vector_v2<T_item> *T0, cuda_vector_v2<T_item> *T1);
+
+__global__ void gen_label_hsdl_v2 (int V, int thread_num, int hop_cst, int hop_now, int* out_pointer, int* out_edge, int* out_edge_weight,
+            cuda_vector_v2<hub_type> *L_gpu, cuda_hashTable_v2<weight_type> *Has, cuda_hashTable_v2<weight_type> *Das,
+            cuda_vector_v2<T_item> *T0, cuda_vector_v2<T_item> *T1, cuda_vector_v2<T_item> *D);
 
 __device__ int query_dis_by_hash_table (cuda_vector_v2<hub_type> *L_gpu);
 
-__global__ void init_T (int V, cuda_vector_v2<hub_type> *T);
+__global__ void init_T (int V, cuda_vector_v2<T_item> *T, cuda_vector_v2<hub_type> *L_gpu);
 
-__global__ void clear_T (int V, cuda_vector_v2<hub_type> *T);
+__global__ void clear_T (int V, cuda_vector_v2<T_item> *T, cuda_vector_v2<T_item> *D);
 
 #endif

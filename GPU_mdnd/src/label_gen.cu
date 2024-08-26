@@ -29,16 +29,17 @@ __global__ void init_T (int V, cuda_vector_v2<T_item> *T, cuda_vector_v2<hub_typ
 }
 
 // 清空 T
-__global__ void clear_T (int V, cuda_vector_v2<T_item> *T) {
+__global__ void clear_T (int V, cuda_vector_v2<T_item> *T, cuda_vector_v2<T_item> *D) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < V) {
         T[tid].init(V, tid);
+        D[tid].init(V, tid);
     }
 }
 
 // 索引生成过程
 __global__ void gen_label_hsdl (int V, int thread_num, int hop_cst, int hop_now, int* out_pointer, int* out_edge, int* out_edge_weight,
-            cuda_hashTable_v2<weight_type> *Has, cuda_vector_v2<hub_type> *L_gpu, cuda_vector_v2<T_item> *T0, cuda_vector_v2<T_item> *T1) {
+            cuda_vector_v2<hub_type> *L_gpu, cuda_hashTable_v2<weight_type> *Has, cuda_vector_v2<T_item> *T0, cuda_vector_v2<T_item> *T1) {
     
     // 线程id
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -90,14 +91,117 @@ __global__ void gen_label_hsdl (int V, int thread_num, int hop_cst, int hop_now,
                     weight_type q_dis = query_dis_by_hash_table(sv, v, Has + tid, L_gpu + v, h + 1, hop_cst);
                     
                     if (dv < q_dis) {
-                        // printf("dv q_dis: %d %d\n", dv, q_dis);
-
                         // 添加标签并压入 T 队列
                         L_gpu[v].push_back({sv, h + 1, dv});
                         t1->push_back({v, dv});
                     }
 
                 }
+            }
+        }
+
+        // 改回 hashtable
+        for (int i = 0; i < L->blocks_num; ++i) {
+            int block_id = L->block_idx_array[i];
+            int block_siz = L->pool->get_block_size(block_id);
+            for (int j = 0; j < block_siz; ++j) {
+                hub_type* x = L->pool->get_node(block_id, j);
+                has->modify(x->hub_vertex, x->hop, hop_cst, 1e9);
+            }
+        }
+    }
+}
+
+// 索引生成过程_v2
+__global__ void gen_label_hsdl_v2 (int V, int thread_num, int hop_cst, int hop_now, int* out_pointer, int* out_edge, int* out_edge_weight,
+            cuda_vector_v2<hub_type> *L_gpu, cuda_hashTable_v2<weight_type> *Has, cuda_hashTable_v2<weight_type> *Das,
+            cuda_vector_v2<T_item> *T0, cuda_vector_v2<T_item> *T1, cuda_vector_v2<T_item> *D) {
+    
+    // 线程id
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    // hash table
+    cuda_hashTable_v2<weight_type> *has = (Has + tid);
+    cuda_hashTable_v2<weight_type> *das = (Das + tid);
+
+    for (int node_id = tid; node_id < V; node_id += thread_num) {
+
+        // node_id 的 T 队列
+        cuda_vector_v2<T_item> *t0 = (T0 + node_id);
+        cuda_vector_v2<T_item> *t1 = (T1 + node_id);
+        cuda_vector_v2<T_item> *d = (D + node_id);
+
+        // node_id 的 label
+        cuda_vector_v2<hub_type> *L = (L_gpu + node_id);
+
+        // 初始化 hashtable，就是遍历 label 集合并一一修改在 hashtable 中的值
+        for (int i = 0; i < L->blocks_num; ++i) {
+            int block_id = L->block_idx_array[i];
+            int block_siz = L->pool->get_block_size(block_id);
+            for (int j = 0; j < block_siz; ++j) {
+                hub_type* x = L->pool->get_node(block_id, j);
+                has->modify(x->hub_vertex, x->hop, hop_cst, x->distance);
+            }
+        }
+
+        // 遍历 T 队列，并生成 D 队列
+        for (int i = 0; i < t0->blocks_num; ++i) {
+            int block_id = t0->block_idx_array[i];
+            int block_siz = t0->pool->get_block_size(block_id);
+            for (int j = 0; j < block_siz; ++j) {
+
+                // 获取 T 队列元素
+                T_item *x = t0->pool->get_node(block_id, j);
+
+                // sv 为起点, ev 为遍历到的点, dis 为距离，hop 为跳数
+                int sv = node_id, ev = x->vertex, h = hop_now;
+                weight_type dis = x->distance;
+
+                // 遍历节点 ev 并扩展
+                for (int k = out_pointer[ev]; k < out_pointer[ev + 1]; ++k) {
+                    int v = out_edge[k];
+                    
+                    // rank pruning，并且同一个点也不能算。
+                    if (sv >= v) continue;
+
+                    // h 为现在这些标签的跳数， h + 1为现在要添加的标签跳数
+                    int dv = dis + out_edge_weight[k];
+
+                    // 判断生成 D 队列
+                    weight_type d_hash = das->get(v);
+                    if (d_hash == 1e9) {
+                        d->push_back({v, d_hash});
+                        das->modify(v, dv);
+                    }else{
+                        if (d_hash > dv) {
+                            das->modify(v, dv);
+                        }
+                    }
+
+                }
+            }
+        }
+
+        // 遍历 D 队列
+        for (int i = 0; i < d->blocks_num; ++i) {
+            int block_id = d->block_idx_array[i];
+            int block_siz = d->pool->get_block_size(block_id);
+            for (int j = 0; j < block_siz; ++j) {
+
+                // 获取 D 队列元素
+                T_item *x = d->pool->get_node(block_id, j);
+
+                int sv = node_id, v = x->vertex, h = hop_now;
+                weight_type dv = das->get(v);
+                weight_type q_dis = query_dis_by_hash_table(sv, v, Has + tid, L_gpu + v, h + 1, hop_cst);
+                
+                if (dv < q_dis) {
+                    // 添加标签并压入 T 队列
+                    L_gpu[v].push_back({sv, h + 1, dv});
+                    t1->push_back({v, dv});
+                }
+
+                das->modify(v, 1e9);
             }
         }
 
@@ -133,12 +237,20 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     info->init(V, V * V * hop_cst, hop_cst);
     printf("init case_info success\n");
 
-    // 准备 hashTable
-    cuda_hashTable_v2<int> *L_hash;
-    cudaMallocManaged(&L_hash, thread_num * sizeof(cuda_hashTable_v2<int>));
+    // 准备 L_hashTable
+    cuda_hashTable_v2<weight_type> *L_hash;
+    cudaMallocManaged(&L_hash, thread_num * sizeof(cuda_hashTable_v2<weight_type>));
     for (int i = 0; i < thread_num; i++) {
-        new (L_hash + i) cuda_hashTable_v2<int> (V * (hop_cst + 1));
+        new (L_hash + i) cuda_hashTable_v2 <weight_type> (V * (hop_cst + 1));
     }
+
+    // 准备 D_hashTable
+    cuda_hashTable_v2<weight_type> *D_hash;
+    cudaMallocManaged(&D_hash, thread_num * sizeof(cuda_hashTable_v2<weight_type>));
+    for (int i = 0; i < thread_num; i++) {
+        new (D_hash + i) cuda_hashTable_v2 <weight_type> (V);
+    }
+    
     printf("init hash_table success\n");
     
     // 编号越小的点，rank 越高
@@ -178,19 +290,23 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 
         // 根据奇偶性，轮流使用 T0、T1，不需要交换指针
         if (iter % 2 == 1) {
-            gen_label_hsdl <<<1, thread_num>>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight, L_hash,
-            info->L_cuda, info->T0, info->T1);
+            // gen_label_hsdl <<<1, thread_num>>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
+            // info->L_cuda, L_hash, info->T0, info->T1);
+            gen_label_hsdl_v2 <<<1, thread_num>>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
+            info->L_cuda, L_hash, D_hash, info->T0, info->T1, info->D);
             cudaDeviceSynchronize();
 
             // 清洗 T 数组
-            clear_T <<<dimGrid, dimBlock>>> (V, info->T0);
+            clear_T <<<dimGrid, dimBlock>>> (V, info->T0, info->D);
         }else{
-            gen_label_hsdl <<<1, thread_num>>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight, L_hash,
-            info->L_cuda, info->T1, info->T0);
+            // gen_label_hsdl <<<1, thread_num>>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
+            // info->L_cuda, L_hash, info->T1, info->T0);
+            gen_label_hsdl_v2 <<<1, thread_num>>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
+            info->L_cuda, L_hash, D_hash, info->T1, info->T0, info->D);
             cudaDeviceSynchronize();
 
             // 清洗 T 数组
-            clear_T <<<dimGrid, dimBlock>>> (V, info->T1);
+            clear_T <<<dimGrid, dimBlock>>> (V, info->T1, info->D);
         }
         cudaDeviceSynchronize();
         cudaEventRecord(stop, 0);

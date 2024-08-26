@@ -73,7 +73,7 @@ void GPU_HSDL_checker (hop_constrained_case_info_v2 *info,  vector<vector<hub_ty
                     cout << endl;
                     return;
                 }else{
-                    // cout << "correct !!!" << endl;
+                    cout << "correct !!!" << endl;
                     // cout << "source, terminal, hopcst = " << source << ", "<< terminal << ", " << hop_cst << endl;
                     // cout << fixed << setprecision(5) << "dis = " << q_dis << endl;
                     // cout << fixed << setprecision(5) << "distances[terminal] = " << distances[terminal] << endl;
@@ -98,18 +98,19 @@ int main () {
     hop_constrained_case_info info_cpu;
     info_cpu.upper_k = upper_k;
 	info_cpu.use_rank_prune = 1;
-	info_cpu.use_2023WWW_generation = 1;
+	info_cpu.use_2023WWW_generation = 0;
 	info_cpu.use_canonical_repair = 1;
 	info_cpu.max_run_time_seconds = 10;
     info_cpu.thread_num = 10;
 
     hop_constrained_case_info_v2 *info_gpu = new hop_constrained_case_info_v2();
+    info_gpu->use_d_optimization = 1;
 
     /* test parameters */
-    bool generate_new_graph = true;
-    bool print_details = true;
-    bool check_correctness = false;
-    bool print_L = false;
+    int generate_new_graph = 1;
+    int print_details = 1;
+    int check_correctness = 1;
+    int print_L = 0;
 
     vector<vector<hub_type> > L;
     L.resize(V);
