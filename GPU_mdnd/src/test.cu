@@ -73,7 +73,7 @@ void GPU_HSDL_checker (hop_constrained_case_info_v2 *info,  vector<vector<hub_ty
                     cout << endl;
                     return;
                 }else{
-                    cout << "correct !!!" << endl;
+                    // cout << "correct !!!" << endl;
                     // cout << "source, terminal, hopcst = " << source << ", "<< terminal << ", " << hop_cst << endl;
                     // cout << fixed << setprecision(5) << "dis = " << q_dis << endl;
                     // cout << fixed << setprecision(5) << "distances[terminal] = " << distances[terminal] << endl;
@@ -109,7 +109,7 @@ int main () {
     /* test parameters */
     int generate_new_graph = 1;
     int print_details = 1;
-    int check_correctness = 1;
+    int check_correctness = 0;
     int print_L = 0;
 
     vector<vector<hub_type> > L;

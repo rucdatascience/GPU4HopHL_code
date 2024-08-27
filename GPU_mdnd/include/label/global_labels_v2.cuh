@@ -13,12 +13,10 @@ public:
     mmpool_v2<hub_type> *mmpool_labels = NULL;
     mmpool_v2<T_item> *mmpool_T0 = NULL;
     mmpool_v2<T_item> *mmpool_T1 = NULL;
-    mmpool_v2<T_item> *mmpool_D = NULL;
 
     cuda_vector_v2<hub_type> *L_cuda = NULL; // gpu res
     cuda_vector_v2<T_item> *T0 = NULL; // T0
     cuda_vector_v2<T_item> *T1 = NULL; // T1
-    cuda_vector_v2<T_item> *D = NULL;
 
     vector<vector<hub_type>> L_cpu; // cpu res
 
@@ -53,10 +51,6 @@ public:
         cudaMallocManaged(&mmpool_T1, sizeof(mmpool_v2<T_item>));
         new (mmpool_T1) mmpool_v2<T_item>(vertex_nums, mmpool_size_block / nodes_per_block);
         cudaDeviceSynchronize();
-        // 第四个内存池用来存 D
-        cudaMallocManaged(&mmpool_D, sizeof(mmpool_v2<T_item>));
-        new (mmpool_D) mmpool_v2<T_item>(vertex_nums, mmpool_size_block / nodes_per_block);
-        cudaDeviceSynchronize();
         
         // 分配 L_cuda 内存池
         cudaMallocManaged(&L_cuda, vertex_nums * sizeof(cuda_vector_v2<hub_type>)); // 分配n个cuda_vector指针
@@ -73,12 +67,6 @@ public:
         for (int i = 0; i < vertex_nums; i++) {
             new (T1 + i) cuda_vector_v2<T_item>(mmpool_T1, i, (hop_cst * vertex_nums) / nodes_per_block + 1); // 调用构造函数
         }
-        // 分配 D 内存池
-        cudaMallocManaged(&D, vertex_nums * sizeof(cuda_vector_v2<T_item>)); // 分配n个cuda_vector指针
-        for (int i = 0; i < vertex_nums; i++) {
-            new (D + i) cuda_vector_v2<T_item>(mmpool_D, i, (hop_cst * vertex_nums) / nodes_per_block + 1); // 调用构造函数
-        }
-        cudaDeviceSynchronize();
     }
 
     // label 中的点数
@@ -110,21 +98,17 @@ public:
             L_cuda[i].~cuda_vector_v2<hub_type>();
             T0[i].~cuda_vector_v2<T_item>();
             T1[i].~cuda_vector_v2<T_item>();
-            D[i].~cuda_vector_v2<T_item>();
         }
         cudaFree(L_cuda);
         cudaFree(T0);
         cudaFree(T1);
-        cudaFree(D);
 
         mmpool_labels->~mmpool_v2();
         mmpool_T0->~mmpool_v2();
         mmpool_T1->~mmpool_v2();
-        mmpool_D->~mmpool_v2();
         cudaFree(mmpool_labels);
         cudaFree(mmpool_T0);
         cudaFree(mmpool_T1);
-        cudaFree(mmpool_D);
     }
 
 };

@@ -31,7 +31,7 @@ public:
     __host__ ~cuda_vector_v2();
 
     // 加入一个元素
-    __device__ bool push_back(const T &value);
+    __device__ void push_back(const T &value);
     
     // 获取元素
     __device__ __host__ T *get(size_t index);
@@ -45,9 +45,6 @@ public:
     
     __device__ bool empty() const { return current_size == 0; }
     
-    __host__ void sort_label(); //从host使用
-    
-    __host__ __device__ bool resize(size_t new_size);
 };
 
 template <typename T> __host__ cuda_vector_v2<T>::cuda_vector_v2(mmpool_v2<T> *pool, const int &idx, size_t capacity) : pool(pool) {
@@ -62,7 +59,7 @@ template <typename T> __host__ cuda_vector_v2<T>::cuda_vector_v2(mmpool_v2<T> *p
     this->block_idx_array[this->blocks_num++] = idx;
 };
 
-template <typename T> __device__ bool cuda_vector_v2<T>::push_back(const T &value) {
+template <typename T> __device__ void cuda_vector_v2<T>::push_back(const T &value) {
 
     // 互斥锁
     while (atomicCAS(&this->lock, 0, 1) != 0);
@@ -71,14 +68,18 @@ template <typename T> __device__ bool cuda_vector_v2<T>::push_back(const T &valu
     // 块满了，申请新的块
     if (this->pool->is_full_block(this->now_block)) {
         this->now_block = pool->get_new_block(this->now_block);
-        this->block_idx_array[this->blocks_num++] = this->now_block;
+        this->pool->push_node(this->now_block, value);
+        
+        this->block_idx_array[this->blocks_num] = this->now_block;
+        this->current_size++;
+        this->blocks_num++;
+    }else{
+        this->pool->push_node(this->now_block, value);
+        this->current_size++;
     }
-    this->pool->push_node(this->now_block, value);
-    this->current_size++;
 
     // 释放锁
     atomicExch(&this->lock, 0);
-    return true;
 
 };
 
@@ -122,39 +123,6 @@ template <typename T> __host__ cuda_vector_v2<T>::~cuda_vector_v2() {
     // first_elements->clear();，
     // free(this->first_elements);，数据在cuda label中释放
 };
-
-template <typename T> __host__ __device__ bool cuda_vector_v2<T>::resize(size_t new_size) {
-    //在初始化后立即调用resize()，因此我们不需要检查是否有足够的块
-    if (this->now_block == 0) {
-        return false;
-    }
-
-    if (this->now_block == 1) {
-        //刚刚初始化完，标为满
-        pool->set_block_user_nodes(this->block_idx_array[0], nodes_per_block);
-    }
-    if (new_size <= this->now_block) {
-        this->now_block = new_size;
-        this->current_size = new_size * nodes_per_block;
-        return true;
-    }
-    while (this->now_block < new_size) {
-        int block_idx = pool->find_available_block();
-        if (block_idx == -1) {
-            //没有空行，申请失败
-            printf("No available block in mmpool\n");
-            assert(false);
-            return false;
-        }
-        this->block_idx_array[this->now_block++] = block_idx;
-        // cudaMemcpy(this->block_idx_array + this->blocks, &block_idx, sizeof(int),
-        //            cudaMemcpyHostToDevice);
-        // this->blocks += 1;
-        pool->set_block_user_nodes(block_idx, nodes_per_block);
-    }
-    this->current_size = new_size * nodes_per_block;
-    return true;
-}
 
 //显式声明模板类
 template <typename hub_type> class cuda_vector_v2;
