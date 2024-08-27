@@ -2,8 +2,6 @@
 #include<vector>
 #include<string>
 
-inline std::vector<std::string> parse_string(std::string parse_target, std::string delimiter);
-
 inline std::vector<std::string> parse_string(std::string parse_target, std::string delimiter) {
 
 	std::vector<std::string> Parsed_content;
@@ -21,3 +19,15 @@ inline std::vector<std::string> parse_string(std::string parse_target, std::stri
 	return Parsed_content;
 
 }
+
+
+/*
+-----------
+#include <text_mining/parse_string.h>
+
+int main()
+{
+	example_parse_string();
+}
+----------------
+*/
