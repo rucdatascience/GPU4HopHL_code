@@ -62,25 +62,28 @@ template <typename T> __host__ cuda_vector_v2<T>::cuda_vector_v2(mmpool_v2<T> *p
 template <typename T> __device__ void cuda_vector_v2<T>::push_back(const T &value) {
 
     // »¥³âËø
-    while (atomicCAS(&this->lock, 0, 1) != 0);
-    // printf("vector_push_back: %d %d\n", vid, this->pool->blocks_state[this->block_idx_array[this->blocks_num-1]]);
-    
-    // ¿éÂúÁË£¬ÉêÇëÐÂµÄ¿é
-    if (this->pool->is_full_block(this->now_block)) {
-        this->now_block = pool->get_new_block(this->now_block);
-        this->pool->push_node(this->now_block, value);
-        
-        this->block_idx_array[this->blocks_num] = this->now_block;
-        this->current_size++;
-        this->blocks_num++;
-    }else{
-        this->pool->push_node(this->now_block, value);
-        this->current_size++;
+    bool blocked = true;
+    while (blocked) {
+        if (0 == atomicCAS(&(this->lock), 0, 1)) {
+            // ¿éÂúÁË£¬ÉêÇëÐÂµÄ¿é
+            if (this->pool->is_full_block(this->now_block)) {
+                this->now_block = pool->get_new_block(this->now_block);
+                this->pool->push_node(this->now_block, value);
+                
+                this->block_idx_array[this->blocks_num] = this->now_block;
+                ++ this->current_size;
+                ++ this->blocks_num;
+                __threadfence();
+            }else{
+                this->pool->push_node(this->now_block, value);
+                ++ this->current_size;
+                __threadfence();
+            }
+            // ÊÍ·ÅËø
+            atomicExch(&(this->lock), 0);
+            blocked = false;
+        }
     }
-
-    // ÊÍ·ÅËø
-    atomicExch(&this->lock, 0);
-
 };
 
 template <typename T> __device__ __host__ T *cuda_vector_v2<T>::get(size_t index) {

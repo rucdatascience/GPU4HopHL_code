@@ -86,7 +86,7 @@ void GPU_HSDL_checker (hop_constrained_case_info_v2 *info,  vector<vector<hub_ty
 }
 
 int main () {
-
+    
     // 测试次数参数
     int iteration_graph_times = 1;
     int iteration_source_times = 1000, iteration_terminal_times = 1000;
@@ -102,7 +102,7 @@ int main () {
 	info_cpu.use_canonical_repair = 1;
 	info_cpu.max_run_time_seconds = 10;
     info_cpu.thread_num = 10;
-
+    
     hop_constrained_case_info_v2 *info_gpu = new hop_constrained_case_info_v2();
     info_gpu->use_d_optimization = 1;
 
@@ -111,7 +111,7 @@ int main () {
     int print_details = 1;
     int check_correctness = 0;
     int print_L = 0;
-
+    
     vector<vector<hub_type> > L;
     L.resize(V);
 
