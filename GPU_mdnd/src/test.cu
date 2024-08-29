@@ -92,7 +92,10 @@ int main () {
     int iteration_source_times = 1000, iteration_terminal_times = 1000;
 
     // 样例图参数
-    int V = 1000, E = 5000, upper_k = 5;
+    int V = 1000, E = 5000;
+    // scanf("%d %d", &V, &E);
+    
+    int upper_k = 5;
     double ec_min = 1, ec_max = 10;
 
     hop_constrained_case_info info_cpu;
@@ -106,6 +109,8 @@ int main () {
     hop_constrained_case_info_v2 *info_gpu = new hop_constrained_case_info_v2();
     info_gpu->use_d_optimization = 1;
 
+    // printf("yes1\n");
+
     /* test parameters */
     int generate_new_graph = 1;
     int print_details = 1;
@@ -115,19 +120,28 @@ int main () {
     vector<vector<hub_type> > L;
     L.resize(V);
 
+    // printf("yes2\n");
+
     /* iteration */
     for (int i = 0; i < iteration_graph_times; i++) {
+
+        // printf("yes3\n");
 
         // 生成图
         graph_v_of_v<int> instance_graph;
         if (generate_new_graph) {
+            // printf("yes3\n");
             instance_graph = graph_v_of_v_generate_random_graph<int>(V, E, ec_min, ec_max, 1, boost_random_time_seed);
+            // printf("yes3\n");
             instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
+            // printf("yes3\n");
             instance_graph.txt_save("../data/simple_iterative_tests.txt");
         }else{
             instance_graph.txt_read("../data/simple_iterative_tests.txt");
         }
 
+        // printf("yes4\n");
+    
         // 通过 instance_graph 生成 CSR_graph
         LDBC<weight_type> graph(V);
         graph_v_of_v_to_LDBC(graph, instance_graph);

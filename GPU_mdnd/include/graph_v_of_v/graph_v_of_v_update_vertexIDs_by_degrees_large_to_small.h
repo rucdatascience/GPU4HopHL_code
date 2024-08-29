@@ -14,7 +14,7 @@ template <typename weight_type>
 graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(graph_v_of_v<weight_type>& input_graph) {
 
 	int N = input_graph.ADJs.size();
-
+	
 	vector<pair<int, int>> sorted_vertices;
 	for (int i = 0; i < N; i++) {
 		sorted_vertices.push_back({ i, input_graph.ADJs[i].size() });
@@ -24,7 +24,7 @@ graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_smal
 	for (int i = 0; i < N; i++) {
 		vertexID_old_to_new[sorted_vertices[i].first] = i;
 	}
-
+	
 	graph_v_of_v<weight_type> output_graph(N);
 
 	for (int i = 0; i < N; i++) {
@@ -35,7 +35,7 @@ graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_smal
 			}
 		}
 	}
-
+	
 	return output_graph;
 }
 
