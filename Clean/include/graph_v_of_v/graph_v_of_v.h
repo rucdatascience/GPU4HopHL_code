@@ -53,6 +53,9 @@ public:
 	*/
 	std::vector<std::vector<std::pair<int, weight_type>>> ADJs;
 
+	int V = 0; // the number of vertices
+	long long E = 0; // the number of edges
+
 	/*constructors*/
 	graph_v_of_v() {}
 	graph_v_of_v(int n) {
@@ -65,8 +68,13 @@ public:
 		return ADJs[i];
 	}
 
+	std::unordered_map<std::string, int> vertex_str_to_id;
+	std::vector<std::pair<std::string, bool>> vertex_id_to_str;
+
 	/*class member functions*/
+	inline int add_vertice(std::string); // Read the vertex information as a string
 	inline void add_edge(int, int, weight_type); // this function can change edge weights
+	inline void add_edge(std::string, std::string, weight_type);
 	inline void remove_edge(int, int);
 	inline void remove_all_adjacent_edges(int);
 	inline bool contain_edge(int, int); // whether there is an edge
@@ -90,6 +98,18 @@ public:
 /*class member functions*/
 
 template <typename weight_type>
+int graph_v_of_v<weight_type>::add_vertice(std::string vertex)
+{
+	if (vertex_str_to_id.find(vertex) == vertex_str_to_id.end()) {
+		vertex_id_to_str.push_back(std::make_pair(vertex, true));
+		vertex_str_to_id[vertex] = V++;
+		std::vector<std::pair<int, weight_type>> x;
+		ADJs.push_back(x);
+	}
+	return vertex_str_to_id[vertex];
+}
+
+template <typename weight_type>
 void graph_v_of_v<weight_type>::add_edge(int e1, int e2, weight_type ec) {
 
 	/*we assume that the size of g is larger than e1 or e2;
@@ -105,6 +125,15 @@ void graph_v_of_v<weight_type>::add_edge(int e1, int e2, weight_type ec) {
 
 	sorted_vector_binary_operations_insert(ADJs[e1], e2, ec);
 	sorted_vector_binary_operations_insert(ADJs[e2], e1, ec);
+}
+
+template <typename weight_type>
+void graph_v_of_v<weight_type>::add_edge(std::string e1, std::string e2, weight_type ec)
+{
+	E++;
+	int v1 = add_vertice(e1);
+	int v2 = add_vertice(e2);
+	add_edge(v1, v2, ec);
 }
 
 template <typename weight_type>
