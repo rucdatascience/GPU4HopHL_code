@@ -2,6 +2,8 @@
 
 #include <HBPLL/gpu_clean.cuh>
 
+#define THREADS_PER_BLOCK 1024
+
 __global__ void query_label(label* L, long long start, long long end, int i, int h_v, int* Lc_hashed, int* d_uv, int V, int K) {
     long long label_id = blockIdx.x * blockDim.x + threadIdx.x;
     label_id += start;
@@ -11,13 +13,16 @@ __global__ void query_label(label* L, long long start, long long end, int i, int
     int v_x = L[label_id].v;
     int h_x = L[label_id].h;
     int d_vvx = L[label_id].d;
+    int update_dis = *d_uv;
     for (int h_y = 0; h_y <= h_v - h_x; h_y++) {
-        int update_dis = Lc_hashed[(long long)i * V * (K + 1) + v_x * (K + 1) + h_y];
-        if (update_dis == INT_MAX)
+        int new_dis = Lc_hashed[(long long)i * V * (K + 1) + v_x * (K + 1) + h_y];
+        if (new_dis == INT_MAX)
             continue;
-        update_dis += d_vvx;
-        atomicMin(d_uv, update_dis);
+        new_dis += d_vvx;
+        update_dis = update_dis > new_dis ? new_dis : update_dis;
     }
+    if (update_dis < *d_uv)
+        atomicMin(d_uv, update_dis);
 }
 
 __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start, cuda_vector<label>** Lc, int* hash_array, int* d_uv) {
@@ -29,11 +34,12 @@ __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start,
     for (int u = i; u < V; u += tc) {
         // Hashing Lc[u] using the ith hash array
         for (long long label_idx = L_start[u]; label_idx < L_start[u + 1]; label_idx++) {
-            d_uv[u] = INT_MAX;
+            d_uv[i] = INT_MAX;
             int v = L[label_idx].v;
             int h_v = L[label_idx].h;
+            int check_duv = L[label_idx].d;
 
-            query_label<<<(L_start[v + 1] - L_start[v] + 255) / 256, 256>>>(L, L_start[v], L_start[v + 1], i, h_v, hash_array, &d_uv[u], V, K);
+            query_label<<<(L_start[v + 1] - L_start[v] + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK>>>(L, L_start[v], L_start[v + 1], i, h_v, hash_array, &d_uv[i], V, K);
             cudaDeviceSynchronize();
             cudaError_t error = cudaGetLastError();
             if (error != cudaSuccess) {
@@ -41,9 +47,9 @@ __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start,
                 return;
             }
 
-            if (d_uv[u] > L[label_idx].d) {
+            if (d_uv[i] > check_duv) {
                 Lc[u]->push_back(L[label_idx]);
-                hash_array[(long long)i * V * (K + 1) + v * (K + 1) + h_v] = L[label_idx].d;
+                hash_array[(long long)i * V * (K + 1) + v * (K + 1) + h_v] = check_duv;
             }
         }
         // Restore the hash array
@@ -64,8 +70,10 @@ cuda_vector<label>** gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<lab
     cudaMallocManaged(&L_start, (V + 1) * sizeof(long long));
     cudaDeviceSynchronize();
 
-    if (cudaGetLastError() != cudaSuccess) {
-        std::cerr << "Error in cudaMallocManaged" << std::endl;
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        std::cerr << "Error in cudaMallocManaged 1" << std::endl;
+        std::cerr << cudaGetErrorString(error) << std::endl;
         return nullptr;
     }
 
@@ -104,7 +112,6 @@ cuda_vector<label>** gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<lab
     cudaMallocManaged(&hash_array, sizeof(int) * tc * V * (K + 1));
     cudaDeviceSynchronize();
 
-
     for (long long i = 0; i < (long long)tc * V * (K + 1); i++)
         hash_array[i] = INT_MAX;
 
@@ -112,8 +119,10 @@ cuda_vector<label>** gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<lab
     cudaMallocManaged(&d_uv, sizeof(int) * tc);
     cudaDeviceSynchronize();
 
-    if (cudaGetLastError() != cudaSuccess) {
-        std::cerr << "Error in cudaMallocManaged" << std::endl;
+    error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        std::cerr << "Error in cudaMallocManaged 2" << std::endl;
+        std::cerr << cudaGetErrorString(error) << std::endl;
         return nullptr;
     }
 
@@ -123,7 +132,7 @@ cuda_vector<label>** gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<lab
 
     cudaEventRecord(start);
 
-    clean_kernel<<<(tc + 255) / 256, 256>>>(V, K, tc, L, L_start, Lc, hash_array, d_uv);
+    clean_kernel<<<(tc + THREADS_PER_BLOCK) / THREADS_PER_BLOCK, THREADS_PER_BLOCK>>>(V, K, tc, L, L_start, Lc, hash_array, d_uv);
     cudaDeviceSynchronize();
 
     cudaEventRecord(stop);
@@ -134,7 +143,7 @@ cuda_vector<label>** gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<lab
 
     std::cout << "GPU Clean Time: " << milliseconds << " ms" << std::endl;
 
-    cudaError_t error = cudaGetLastError();
+    error = cudaGetLastError();
     if (error != cudaSuccess) {
         std::cerr << "CUDA error: " << cudaGetErrorString(error) << std::endl;
         return nullptr;
