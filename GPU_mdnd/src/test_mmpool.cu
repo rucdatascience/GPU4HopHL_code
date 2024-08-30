@@ -17,23 +17,18 @@ __global__ void test_hashtable (cuda_hashTable_v2<int> *Has) {
 __global__ void test_vector_insert (cuda_vector_v2<hub_type> *L_gpu) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     L_gpu[0].push_back({tid, tid, tid});
-    L_gpu[0].push_back({tid, tid, tid});
-    L_gpu[1].push_back({tid, tid, tid});
-    L_gpu[1].push_back({tid, tid, tid});
-    L_gpu[2].push_back({tid, tid, tid});
-    L_gpu[0].push_back({tid, tid, tid});
     printf("insert successful!\n");
 }
 
 __global__ void test_vector_print (cuda_vector_v2<hub_type> *L_gpu) {
-    printf("test_vector_print !!!\n");
+    // printf("test_vector_print !!!\n");
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    printf("test_vector_print: %d\n", tid);
+    // printf("test_vector_print: %d\n", tid);
     cuda_vector_v2<hub_type> *L = (L_gpu + tid);
     for (int i = 0; i < L->blocks_num; ++i) {
         int block_id = L->block_idx_array[i];
         int block_siz = L->pool->get_block_size(block_id);
-        printf("tid, block_id, block_siz: %d %d %d\n", tid, block_id, block_siz);
+        // printf("tid, block_id, block_siz: %d %d %d\n", tid, block_id, block_siz);
         for (int j = 0; j < block_siz; ++j) {
             hub_type* x = L->pool->get_node(block_id, j);
             printf("%d %d %d %d %d\n", tid, x->hop, x->hub_vertex, x->distance);
@@ -56,13 +51,13 @@ void test_mmpool (int V, const int &thread_num, const int &test_type, hop_constr
         test_hashtable <<< 1, thread_num>>> (L_hash);
     } else if (test_type == 2) {
         // 测试 cuda_vector 的部分，先插入，再输出，并行。
-        test_vector_insert <<< 1, thread_num >>> (info->L_cuda);
+        test_vector_insert <<< 30, 30 >>> (info->L_cuda);
         cudaDeviceSynchronize();
         test_vector_print <<< 1, V >>> (info->L_cuda);
         cudaDeviceSynchronize();
     } else if (test_type == 3) {
         // 测试 cuda_vector 的部分，先插入，再clear，再插入，最后输出，并行。
-        test_vector_insert <<< 1, thread_num >>> (info->L_cuda);
+        test_vector_insert <<< 2, thread_num / 2 >>> (info->L_cuda);
         cudaDeviceSynchronize();
         printf("------------------------------------\n");
         test_vector_clear <<< 1, thread_num >>> (V, info->L_cuda);

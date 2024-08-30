@@ -20,7 +20,7 @@ public:
     int lock; // gpu mtx
 
     // 构造函数
-    __host__ mmpool_v2(const int &V, const int &num_blocks = 100);
+    __host__ mmpool_v2(int V, int num_blocks = 100);
 
     // 获取内存池元素个数
     __host__ __device__ size_t size();
@@ -47,15 +47,6 @@ public:
     // 修改指定 blocks_state 的值
     __host__ __device__ void set_blocks_state(const int &block_idx, const int &value);
 
-    // 查找空块
-    // __host__ __device__ int find_available_block(bool mark_used = true);
-
-    // 删除块（逻辑删除）
-    // __host__ __device__ bool remove_block(int block_idx);
-
-    // // 删除node（逻辑删除)
-    // __host__ __device__ bool remove_node(int block_idx, int pos);
-
     // 获取块的数量
     __host__ __device__ int get_num_blocks() { return num_blocks; }
 
@@ -75,7 +66,7 @@ public:
 };
 
 // 构造函数
-template <typename T> __host__ mmpool_v2<T>::mmpool_v2(const int &V, const int &num_blocks) : num_blocks(num_blocks) {
+template <typename T> __host__ mmpool_v2<T>::mmpool_v2(int V, int num_blocks) : num_blocks(num_blocks) {
     
     lock = 0;
     cudaMallocManaged(&blocks_pool, sizeof(block) * num_blocks);
@@ -119,35 +110,30 @@ template <typename T> __host__ __device__ bool mmpool_v2<T>::is_valid_block(cons
 
 // 添加节点到内存池
 template <typename T> __device__ bool mmpool_v2<T>::push_node(const int &block_idx, const T &node_data) {
-    
-    // 无效块索引
-    if (!is_valid_block(block_idx)) {
-        return false; 
-    }
+
     // 修改块元素内容
     blocks_pool[block_idx].data[-blocks_state[block_idx]] = node_data;
     blocks_state[block_idx]--;
-
-    return true;
+    
 }
 
 // 获取一个新块，前一个块是 block_idx
 template <typename T> __device__ int mmpool_v2<T>::get_new_block(const int &block_idx) {
-    while (atomicCAS(&this->lock, 0, 1) != 0);
-    // printf("a new block!! %d %d %d\n", block_idx, last_empty_block_idx, num_blocks);
-    blocks_state[last_empty_block_idx] = 0;
-    blocks_state[block_idx] = last_empty_block_idx ++;
-    atomicExch(&this->lock, 0); // 释放锁
+    bool blocked = true;
+    while (blocked) {
+        if (atomicCAS(&this->lock, 0, 1) == 0) {
+            // printf("a new block!! %d %d %d\n", block_idx, last_empty_block_idx, num_blocks);
+            blocks_state[last_empty_block_idx] = 0;
+            blocks_state[block_idx] = last_empty_block_idx ++;
+            __threadfence();
+            atomicExch(&this->lock, 0); // 释放锁
+            blocked = false;
+        }
+    }
     return blocks_state[block_idx];
 }
 
 template <typename T> __host__ __device__ int mmpool_v2<T>::get_block_size(const int &block_idx) {
-
-    // 无效块索引
-    if (!is_valid_block(block_idx)) {
-        return -1; 
-    }
-
     if (blocks_state[block_idx] > 0) return nodes_per_block;
     else return -blocks_state[block_idx];
 }
@@ -158,14 +144,6 @@ template <typename T> __host__ __device__ void mmpool_v2<T>::set_blocks_state(co
 
 // 查找内存池中指定行的指定下标的块
 template <typename T> __host__ __device__ T *mmpool_v2<T>::get_node(const int &block_idx, const int &node_idx) {
-    // 无效块索引
-    if (!is_valid_block(block_idx)) {
-        return NULL; 
-    }
-    // 无效节点索引
-    // if (node_idx < 0 || (node_idx > -blocks_state[block_idx] || blocks_state[block_idx] > 0)) {
-    //     return NULL;
-    // }
     return &(blocks_pool[block_idx].data[node_idx]);
 }
 
