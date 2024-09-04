@@ -44,20 +44,20 @@ int main(int argc,char **argv) {
     instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
     instance_graph.txt_save("simple_iterative_tests.txt");
 
+    vector<vector<hop_constrained_two_hop_label>> uncleaned_L;
+
     hop_constrained_case_info mm;
 	mm.upper_k = 5;
 	mm.use_rank_prune = 1;
 	mm.use_2023WWW_generation = 0;
 	mm.use_canonical_repair = 1;
 	mm.max_run_time_seconds = 10;
-	mm.thread_num = 10;
-
-    test_HSDL(instance_graph);
-
-    vector<vector<hop_constrained_two_hop_label>> uncleaned_L;
+	mm.thread_num = 100;
 
     hop_constrained_two_hop_labels_generation(instance_graph, mm, uncleaned_L);
     hop_constrained_check_correctness(mm, instance_graph, 10, 10, 5);
+
+    cout<< "CPU clean time: " << mm.time_canonical_repair << "s" <<endl;
 
     vector<vector<label>> L;
 
@@ -123,7 +123,7 @@ int main(int argc,char **argv) {
     }*/
 
     mm.L = L_gpu;
-    hop_constrained_check_correctness(mm, instance_graph, 10, 10, 5);
+    //hop_constrained_check_correctness(mm, instance_graph, 10, 10, 5);
 
     Lc[0]->pool->~base_memory();
     cudaFree(Lc[0]->pool);

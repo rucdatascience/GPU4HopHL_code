@@ -39,8 +39,8 @@ __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start,
             int h_v = L[label_idx].h;
             int check_duv = L[label_idx].d;
 
-            query_label<<<(L_start[v + 1] - L_start[v] + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK>>>(L, L_start[v], L_start[v + 1], i, h_v, hash_array, &d_uv[i], V, K);
-            cudaDeviceSynchronize();
+            //query_label<<<(L_start[v + 1] - L_start[v] + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK>>>(L, L_start[v], L_start[v + 1], i, h_v, hash_array, &d_uv[i], V, K);
+            //cudaDeviceSynchronize();
             cudaError_t error = cudaGetLastError();
             if (error != cudaSuccess) {
                 printf("CUDA error: %s\n", cudaGetErrorString(error));
@@ -48,7 +48,7 @@ __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start,
             }
 
             if (d_uv[i] > check_duv) {
-                Lc[u]->push_back(L[label_idx]);
+                //Lc[u]->push_back(L[label_idx]);
                 hash_array[(long long)i * V * (K + 1) + v * (K + 1) + h_v] = check_duv;
             }
         }
