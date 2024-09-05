@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.17)
 project(Group4HSDL_cpu LANGUAGES CXX CUDA)
 
 # 设置 C++ 和 CUDA 的标准
@@ -32,6 +32,7 @@ file(GLOB_RECURSE SRC_FILES
 # 添加包含目录
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CUDAToolkit_INCLUDE_DIRS})
+include_directories(/home/sunyahui/boost_1_85_0)
 
 # 创建库
 add_library(${PROJECT_NAME} ${SRC_FILES})

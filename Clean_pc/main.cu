@@ -5,14 +5,7 @@
 
 int main(int argc,char **argv) {
     int ec_min = 1, ec_max = 10;
-    int V = 10, E = 10;
-    int tc = 10;
-    std::cout << "Input the number of vertices: " << std::endl;
-    std::cin >> V;
-    std::cout << "Input the number of edges: " << std::endl;
-    std::cin >> E;
-    std::cout << "Input the number of threads: " << std::endl;
-    std::cin >> tc;
+    int V = 10000, E = 50000, tc = 10000;
 
     std::ios::sync_with_stdio(0);
     std::cin.tie(0);
@@ -49,7 +42,7 @@ int main(int argc,char **argv) {
 	mm.use_rank_prune = 1;
 	mm.use_2023WWW_generation = 0;
 	mm.use_canonical_repair = 1;
-	mm.max_run_time_seconds = 10;
+	mm.max_run_time_seconds = 100;
 	mm.thread_num = 100;
 
     //test_HSDL(instance_graph);
@@ -79,6 +72,20 @@ int main(int argc,char **argv) {
 
     gpu_clean(instance_graph, L, L_gpu,tc, 5);
     std::cout << "GPU clean finished" << std::endl;
+
+auto& L_CPUclean = mm.L;
+int uncleaned_L_num=0, L_gpu_num=0, L_CPUclean_num=0;
+for (int i = 0; i < L_size; i++) {
+    L_CPUclean_num+=L_CPUclean[i].size();
+        uncleaned_L_num+=L[i].size();
+        L_gpu_num+=L_gpu[i].size();
+    }
+cout << "L_CPUclean_num: " << L_CPUclean_num <<endl;    
+cout << "uncleaned_L_num: " << uncleaned_L_num <<endl;
+cout << "L_gpu_num: " << L_gpu_num <<endl;
+
+
+
     // if (Lc == nullptr) {
     //     std::cout << "GPU clean failed" << std::endl;
     //     return 0;

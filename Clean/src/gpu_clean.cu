@@ -4,27 +4,6 @@
 
 #define THREADS_PER_BLOCK 1024
 
-__global__ void query_label(label* L, long long start, long long end, int i, int h_v, int* Lc_hashed, int* d_uv, int V, int K) {
-    long long label_id = blockIdx.x * blockDim.x + threadIdx.x;
-    label_id += start;
-
-    if (label_id < start || label_id >= end)
-        return;
-    int v_x = L[label_id].v;
-    int h_x = L[label_id].h;
-    int d_vvx = L[label_id].d;
-    int update_dis = *d_uv;
-    for (int h_y = 0; h_y <= h_v - h_x; h_y++) {
-        int new_dis = Lc_hashed[(long long)i * V * (K + 1) + v_x * (K + 1) + h_y];
-        if (new_dis == INT_MAX)
-            continue;
-        new_dis += d_vvx;
-        update_dis = update_dis > new_dis ? new_dis : update_dis;
-    }
-    if (update_dis < *d_uv)
-        atomicMin(d_uv, update_dis);
-}
-
 __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start, cuda_vector<label>** Lc, int* hash_array, int* d_uv) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -39,18 +18,32 @@ __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start,
             int h_v = L[label_idx].h;
             int check_duv = L[label_idx].d;
 
-            //query_label<<<(L_start[v + 1] - L_start[v] + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK>>>(L, L_start[v], L_start[v + 1], i, h_v, hash_array, &d_uv[i], V, K);
-            //cudaDeviceSynchronize();
-            cudaError_t error = cudaGetLastError();
-            if (error != cudaSuccess) {
-                printf("CUDA error: %s\n", cudaGetErrorString(error));
-                return;
+            for(int label_id= L_start[v]; label_id< L_start[v + 1]; label_id++){
+
+                int v_x = L[label_id].v;
+                int h_x = L[label_id].h;
+                int d_vvx = L[label_id].d;
+                int update_dis = d_uv[i];
+                for (int h_y = 0; h_y <= h_v - h_x; h_y++) {
+                    int new_dis = hash_array[(long long)i * V * (K + 1) + v_x * (K + 1) + h_y];
+                    if (new_dis == INT_MAX)
+                        continue;
+                    new_dis += d_vvx;
+                    update_dis = update_dis > new_dis ? new_dis : update_dis;
+                }
+                if (update_dis < d_uv[i]){
+                    d_uv[i] = update_dis;
+                }
             }
 
-            if (d_uv[i] > check_duv) {
-                //Lc[u]->push_back(L[label_idx]);
-                hash_array[(long long)i * V * (K + 1) + v * (K + 1) + h_v] = check_duv;
-            }
+Lc[u]->push_back(L[label_idx]);
+
+            // if (d_uv[i] > check_duv) {
+            //     Lc[u]->push_back(L[label_idx]);
+            //     hash_array[(long long)i * V * (K + 1) + v * (K + 1) + h_v] = check_duv;
+            // }
+
+
         }
         // Restore the hash array
         for (int it = 0; it < Lc[u]->current_size; it++) {
