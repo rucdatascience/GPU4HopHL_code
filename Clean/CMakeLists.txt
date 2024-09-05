@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.17)
 project(Group4HSDL_cpu LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,6 +20,9 @@ add_library(${PROJECT_NAME} ${SRC_FILES})
 
 # 包含目录
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CUDA_INCLUDE_DIRS})
+include_directories(/usr/local/cuda-11.8/include)
+include_directories(/home/sunyahui/boost_1_85_0)
 message("Include directories: ${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 # 链接目录
@@ -30,8 +33,10 @@ aux_source_directory(src DIR_SRCS)
 
 add_executable(test ${DIR_SRCS})
 
+target_include_directories(test PUBLIC ${Boost_INCLUDE_DIRS})
 target_include_directories(test PUBLIC ${CUDA_INCLUDE_DIRS})
 target_link_libraries(test ${PROJECT_NAME} ${CUDA_LIBRARIES})
+target_link_libraries(test ${Boost_LIBRARIES})
 
 #set_target_properties(${EXECUTABLE_NAME_GPU} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_target_properties(test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
