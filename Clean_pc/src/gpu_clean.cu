@@ -2,25 +2,7 @@
 #include <cuda_runtime.h>
 #include <HBPLL/gpu_clean.cuh>
 
-//extern __shared__ int shared_hash_array[];
-
-#define THREADS_PER_BLOCK 32
-
-__device__ int query_label(label* L, long long start, long long end, int i, int h_v, int* Lc_hashed, int V, int K) {
-    int update_dis = INT_MAX;
-    for(long long label_id = start; label_id < end; ++label_id) {
-        int v_x = L[label_id].v;
-        int h_x = L[label_id].h;
-        int d_vvx = L[label_id].d;
-
-        for (int h_y = 0; h_y <= h_v - h_x; h_y++) {
-            int new_dis = Lc_hashed[v_x * (K + 1) + h_y];
-            new_dis = (new_dis == INT_MAX) ? INT_MAX : new_dis + d_vvx;
-            update_dis = (update_dis > new_dis) ? new_dis : update_dis;
-        }
-    }
-    return update_dis;
-}
+#define THREADS_PER_BLOCK 1600
 
 __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start, int* hash_array, int* mark) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -30,16 +12,40 @@ __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start,
     int offset = i*V*(K+1);
     for (int u = i; u < V; u += tc) {
         for (long long label_idx = L_start[u]; label_idx < L_start[u + 1]; label_idx++) {
-            int d_uv = INT_MAX;
             int v = L[label_idx].v;
             int h_v = L[label_idx].h;
             int check_duv = L[label_idx].d;
-            d_uv = query_label(L, L_start[v], L_start[v + 1], i, h_v, hash_array + offset, V, K);
 
-            if (d_uv > check_duv) {
+            //d_uv = query_label(L, L_start[v], L_start[v + 1], i, h_v, hash_array + offset, V, K);
+            int update_dis = INT_MAX;
+    for(long long label_id = L_start[v]; label_id < L_start[v + 1]; ++label_id) {
+        int v_x = L[label_id].v;
+        int h_x = L[label_id].h;
+        int d_vvx = L[label_id].d;
+
+        for (int h_y = 0; h_y <= h_v - h_x; h_y++) {
+            int new_dis = (hash_array + offset)[v_x * (K + 1) + h_y];
+            new_dis = (new_dis == INT_MAX) ? INT_MAX : new_dis + d_vvx;
+            update_dis = (update_dis > new_dis) ? new_dis : update_dis;
+        }
+        // for (int h_y = h_v - h_x; h_y <= h_v - h_x; h_y++) {
+        //     int new_dis = (hash_array + offset)[v_x * (K + 1) + h_y];
+        //     new_dis = (new_dis == INT_MAX) ? INT_MAX : new_dis + d_vvx;
+        //     update_dis = (update_dis > new_dis) ? new_dis : update_dis;
+        // }
+
+        if(update_dis <= check_duv){  // new pruning, no effect
+            break;
+        }
+    }
+
+            if (update_dis > check_duv) {
                 hash_array[offset + v * (K + 1) + h_v] = check_duv;
+// for(int x = h_v; x<= K; x++){
+//     hash_array[offset + v * (K + 1) + x] = min(check_duv, hash_array[offset + v * (K + 1) + x]);
+// }
+
             } else {
-                //printf("h");
                 mark[label_idx] = 1;
             }
         }
@@ -48,7 +54,12 @@ __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start,
         for (long long label_idx = L_start[u]; label_idx < L_start[u + 1]; label_idx++) {
             int v = L[label_idx].v;
             int h_v = L[label_idx].h;
+
             hash_array[offset + v * (K + 1) + h_v] = INT_MAX;
+// for(int x = h_v; x<= K; x++){
+//     hash_array[offset + v * (K + 1) + x] = INT_MAX;
+// }
+
         }
     }
 }
@@ -99,15 +110,10 @@ void gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<label>>& input_L,ve
     for (long long i = 0; i < (long long)tc * V * (K + 1); i++)
         hash_array[i] = INT_MAX;
 
-    // int* d_uv = nullptr;
-    // cudaMallocManaged(&d_uv, sizeof(int) * tc);
-    // cudaDeviceSynchronize();
-
     error = cudaGetLastError();
     if (error != cudaSuccess) {
         std::cerr << "Error in cudaMallocManaged 2" << std::endl;
         std::cerr << cudaGetErrorString(error) << std::endl;
-        //return nullptr;
     }
 
     
@@ -127,8 +133,6 @@ void gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<label>>& input_L,ve
 {
     int start = L_start[i];
     int end = L_start[i+1];
-    // int ts = 0;
-    // int te = 0;
     for(int j = start; j < end; ++j)
     {
         if(mark[j]==0)

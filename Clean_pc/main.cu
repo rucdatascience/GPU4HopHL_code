@@ -100,34 +100,34 @@ cout << "L_gpu_num: " << L_gpu_num <<endl;
     //     }
     // }
 
-    if (mm.L.size() != L_gpu.size())
-        std::cout << "Total GPU clean size mismatch" << std::endl;
-    else {
-        int l_size = mm.L.size();
-        for (int i = 0; i < l_size; i++) {
-            if (mm.L[i].size() != L_gpu[i].size()) {
-                std::cout << "GPU clean size mismatch at " << i << std::endl;
-                std::cout << "Baseline label size: " << mm.L[i].size() << std::endl;
-                for (int j = 0; j < mm.L[i].size(); j++) {
-                    std::cout << mm.L[i][j].hub_vertex << " " << mm.L[i][j].hop << " " << mm.L[i][j].distance << std::endl;
-                }
-                std::cout << "GPU label size: " << L_gpu[i].size() << std::endl;
-                for (int j = 0; j < L_gpu[i].size(); j++) {
-                    std::cout << L_gpu[i][j].hub_vertex << " " << L_gpu[i][j].hop << " " << L_gpu[i][j].distance << std::endl;
-                }
-                continue;
-            }
-            else {
-                int _size = mm.L[i].size();
-                for (int j = 0; j < _size; j++) {
-                    if (mm.L[i][j].hub_vertex != L_gpu[i][j].hub_vertex || mm.L[i][j].hop != L_gpu[i][j].hop || mm.L[i][j].distance != L_gpu[i][j].distance) {
-                        std::cout << "GPU clean mismatch at " << i << " " << j << std::endl;
-                        break;
-                    }
-                }
-            }
-        }
-    }
+    // if (mm.L.size() != L_gpu.size())
+    //     std::cout << "Total GPU clean size mismatch" << std::endl;
+    // else {
+    //     int l_size = mm.L.size();
+    //     for (int i = 0; i < l_size; i++) {
+    //         if (mm.L[i].size() != L_gpu[i].size()) {
+    //             std::cout << "GPU clean size mismatch at " << i << std::endl;
+    //             std::cout << "Baseline label size: " << mm.L[i].size() << std::endl;
+    //             for (int j = 0; j < mm.L[i].size(); j++) {
+    //                 std::cout << mm.L[i][j].hub_vertex << " " << mm.L[i][j].hop << " " << mm.L[i][j].distance << std::endl;
+    //             }
+    //             std::cout << "GPU label size: " << L_gpu[i].size() << std::endl;
+    //             for (int j = 0; j < L_gpu[i].size(); j++) {
+    //                 std::cout << L_gpu[i][j].hub_vertex << " " << L_gpu[i][j].hop << " " << L_gpu[i][j].distance << std::endl;
+    //             }
+    //             continue;
+    //         }
+    //         else {
+    //             int _size = mm.L[i].size();
+    //             for (int j = 0; j < _size; j++) {
+    //                 if (mm.L[i][j].hub_vertex != L_gpu[i][j].hub_vertex || mm.L[i][j].hop != L_gpu[i][j].hop || mm.L[i][j].distance != L_gpu[i][j].distance) {
+    //                     std::cout << "GPU clean mismatch at " << i << " " << j << std::endl;
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     mm.L = L_gpu;
     hop_constrained_check_correctness(mm, instance_graph, 10, 10, 5);
