@@ -18,4 +18,4 @@ using thrust::device_vector;
 __device__ int query_label(label* L, long long start, long long end, int i, int h_v, int* Lc_hashed, int V, int K);
 __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start, int* hash_array,int *mark);
 
-void gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<label>>& input_L,vector<vector<hop_constrained_two_hop_label>>& res, int tc, int K);
+double gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<label>>& input_L,vector<vector<hop_constrained_two_hop_label>>& res, int tc, int K);

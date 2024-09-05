@@ -3,36 +3,27 @@
 #include "HBPLL/test.h"
 #include "HBPLL/gpu_clean.cuh"
 
-int main(int argc,char **argv) {
+
+class record_info{
+    public:
+    double CPU_Clean_Time, GPU_Clean_Time;
+};
+
+
+record_info main_element(){
+
+
+    record_info record_info_case;
+
     int ec_min = 1, ec_max = 10;
-    int V = 10000, E = 50000, tc = 10000;
+    int V = 1000, E = 5000, tc = 1000;
 
     std::ios::sync_with_stdio(0);
     std::cin.tie(0);
     std::cout.tie(0);
 
-    //freopen("../input.txt", "r", stdin);
-
-    /*std::string directory;
-    std::cout << "Please input the data directory: " << std::endl;
-    std::cin >> directory;
-
-    if (directory.back() != '/')
-        directory += "/";
-
-    std::string graph_name;
-    std::cout << "Please input the graph name: " << std::endl;
-    std::cin >> graph_name;
-
-    std::string config_file_path = directory + graph_name + ".properties";*/
-
     graph_v_of_v<int> instance_graph;
     instance_graph = graph_v_of_v_generate_random_graph<int>(V, E, ec_min, ec_max, 1, boost_random_time_seed);
-    //instance_graph.txt_read("simple_iterative_tests.txt");
-    //LDBC<int> ldbc_graph(directory, graph_name);
-    //ldbc_graph.read_config(config_file_path);
-
-    //ldbc_graph.load_graph();
 
     instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
     instance_graph.txt_save("simple_iterative_tests.txt");
@@ -45,13 +36,13 @@ int main(int argc,char **argv) {
 	mm.max_run_time_seconds = 100;
 	mm.thread_num = 100;
 
-    //test_HSDL(instance_graph);
-
     vector<vector<hop_constrained_two_hop_label>> uncleaned_L;
 
     hop_constrained_two_hop_labels_generation(instance_graph, mm, uncleaned_L);
     hop_constrained_check_correctness(mm, instance_graph, 10, 10, 5);
     std::cout<<"CPU Clean Time: "<<mm.time_canonical_repair<<" s"<<endl;
+record_info_case.CPU_Clean_Time = mm.time_canonical_repair;
+
 
     vector<vector<label>> L;
 
@@ -70,8 +61,10 @@ int main(int argc,char **argv) {
     vector<vector<hop_constrained_two_hop_label>> L_gpu;
     L_gpu.resize(L_size);
 
-    gpu_clean(instance_graph, L, L_gpu,tc, 5);
+    double GPU_clean_time = gpu_clean(instance_graph, L, L_gpu, tc, 5);
     std::cout << "GPU clean finished" << std::endl;
+    std::cout << "GPU Clean Time: " << GPU_clean_time << " s" << std::endl;
+    record_info_case.GPU_Clean_Time =GPU_clean_time;
 
 auto& L_CPUclean = mm.L;
 int uncleaned_L_num=0, L_gpu_num=0, L_CPUclean_num=0;
@@ -140,6 +133,24 @@ cout << "L_gpu_num: " << L_gpu_num <<endl;
     //     cudaFree(Lc[i]);
     // }
     // cudaFree(Lc);
+
+    return record_info_case;
+}
+
+int main(int argc,char **argv) {
+
+int iteration_times =10;
+
+double CPU_Clean_Time_avg = 0, GPU_Clean_Time_avg = 0;
+
+for(int i=0;i< iteration_times; i++){
+record_info x = main_element();
+CPU_Clean_Time_avg+=x.CPU_Clean_Time;
+GPU_Clean_Time_avg+=x.GPU_Clean_Time;
+}
+
+cout << "CPU_Clean_Time_avg: " << CPU_Clean_Time_avg << "s" <<endl;
+cout << "GPU_Clean_Time_avg: " << GPU_Clean_Time_avg << "s" <<endl;
 
     return 0;
 }

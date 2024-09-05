@@ -2,7 +2,7 @@
 #include <cuda_runtime.h>
 #include <HBPLL/gpu_clean.cuh>
 
-#define THREADS_PER_BLOCK 1600
+#define THREADS_PER_BLOCK 1024
 
 __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start, int* hash_array, int* mark) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -65,7 +65,8 @@ __global__ void clean_kernel(int V, int K, int tc, label* L, long long* L_start,
 }
 
 
-void gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<label>>& input_L,vector<vector<hop_constrained_two_hop_label>>& res, int tc, int K) {
+double gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<label>>& input_L, vector<vector<hop_constrained_two_hop_label>>& res, int tc, int K) {
+
     int V = input_graph.size();
 
     vector<label> L_flat;
@@ -152,8 +153,7 @@ void gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<label>>& input_L,ve
 
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
-
-    std::cout << "GPU Clean Time: " << milliseconds/1e3 << " s" << std::endl;
+    double GPU_clean_time = milliseconds/1e3;
 
     error = cudaGetLastError();
     if (error != cudaSuccess) {
@@ -168,5 +168,7 @@ void gpu_clean(graph_v_of_v<int>& input_graph, vector<vector<label>>& input_L,ve
     cudaFree(L_start);
     cudaFree(L);
     cudaFree(hash_array);
+
+    return GPU_clean_time;
 }
 
