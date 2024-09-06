@@ -16,7 +16,7 @@ record_info main_element(){
     record_info record_info_case;
 
     int ec_min = 1, ec_max = 10;
-    int V = 1000, E = 5000, tc = 1000;
+    int V = 10000, E = 50000, tc = V;
 
     std::ios::sync_with_stdio(0);
     std::cin.tie(0);
@@ -61,7 +61,7 @@ record_info_case.CPU_Clean_Time = mm.time_canonical_repair;
     vector<vector<hop_constrained_two_hop_label>> L_gpu;
     L_gpu.resize(L_size);
 
-    double GPU_clean_time = gpu_clean(instance_graph, L, L_gpu, tc, 5);
+    double GPU_clean_time = gpu_clean(instance_graph, L, L_gpu, tc, mm.upper_k);
     std::cout << "GPU clean finished" << std::endl;
     std::cout << "GPU Clean Time: " << GPU_clean_time << " s" << std::endl;
     record_info_case.GPU_Clean_Time =GPU_clean_time;
@@ -139,14 +139,14 @@ cout << "L_gpu_num: " << L_gpu_num <<endl;
 
 int main(int argc,char **argv) {
 
-int iteration_times =10;
+int iteration_times =1;
 
 double CPU_Clean_Time_avg = 0, GPU_Clean_Time_avg = 0;
 
 for(int i=0;i< iteration_times; i++){
 record_info x = main_element();
-CPU_Clean_Time_avg+=x.CPU_Clean_Time;
-GPU_Clean_Time_avg+=x.GPU_Clean_Time;
+CPU_Clean_Time_avg+=x.CPU_Clean_Time / iteration_times;
+GPU_Clean_Time_avg+=x.GPU_Clean_Time / iteration_times;
 }
 
 cout << "CPU_Clean_Time_avg: " << CPU_Clean_Time_avg << "s" <<endl;

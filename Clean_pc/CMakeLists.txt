@@ -18,7 +18,7 @@ find_package(CUDAToolkit REQUIRED)
 
 # 设置编译标志
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -O3")
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -G --generate-code=arch=compute_86,code=sm_86 -rdc=true")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3")
 
 # 搜索头文件和源文件
 file(GLOB_RECURSE SRC_FILES 
