@@ -7,31 +7,31 @@
 #include <tool_functions/ThreadPool.h>
 
 /*unique code for this file: 599*/
-long long int max_labal_size_599;
-long long int labal_size_599;
-int max_N_ID_for_mtx_599 = 1e7;
-double max_run_time_nanoseconds_599;
-int global_upper_k;
-long long int label_size_before_canonical_repair_599, label_size_after_canonical_repair_599;
+static long long int max_labal_size_599;
+static long long int labal_size_599;
+static int max_N_ID_for_mtx_599 = 1e7;
+static double max_run_time_nanoseconds_599;
+static int global_upper_k;
+static long long int label_size_before_canonical_repair_599, label_size_after_canonical_repair_599;
 
-auto begin_time_599 = std::chrono::high_resolution_clock::now();
+static auto begin_time_599 = std::chrono::high_resolution_clock::now();
 
-vector<std::shared_timed_mutex> mtx_599(max_N_ID_for_mtx_599);
+static vector<std::shared_timed_mutex> mtx_599(max_N_ID_for_mtx_599);
 
-graph_v_of_v<int> ideal_graph_599;
+static graph_v_of_v<int> ideal_graph_599;
 
-vector<vector<hop_constrained_two_hop_label>> L_temp_599;
-vector<vector<vector<pair<int, int>>>> Temp_L_vk_599;
-vector<vector<pair<int, int>>> dist_hop_599;
-vector<vector<vector<int>>> Vh_599;
+static vector<vector<hop_constrained_two_hop_label>> L_temp_599;
+static vector<vector<vector<pair<int, int>>>> Temp_L_vk_599;
+static vector<vector<pair<int, int>>> dist_hop_599;
+static vector<vector<vector<int>>> Vh_599;
 
-queue<int> Qid_599;
+static queue<int> Qid_599;
 
 typedef typename boost::heap::fibonacci_heap<hop_constrained_two_hop_label>::handle_type hop_constrained_node_handle;
 
-vector<vector<vector<pair<hop_constrained_node_handle, int>>>> Q_handle_priorities_599;
+static vector<vector<vector<pair<hop_constrained_node_handle, int>>>> Q_handle_priorities_599;
 
-void hop_constrained_clear_global_values()
+static void hop_constrained_clear_global_values()
 {
 	vector<vector<hop_constrained_two_hop_label>>().swap(L_temp_599);
 	ideal_graph_599.clear();
@@ -42,7 +42,7 @@ void hop_constrained_clear_global_values()
 	queue<int>().swap(Qid_599);
 }
 
-void HSDL_thread_function(int v_k)
+static void HSDL_thread_function(int v_k)
 {
 
 	if (labal_size_599 > max_labal_size_599)
@@ -223,7 +223,7 @@ void HSDL_thread_function(int v_k)
 	mtx_599[max_N_ID_for_mtx_599 - 1].unlock();
 }
 
-void _2023WWW_thread_function(int v_k)
+static void _2023WWW_thread_function(int v_k)
 {
 
 	if (labal_size_599 > max_labal_size_599)
@@ -370,7 +370,7 @@ void _2023WWW_thread_function(int v_k)
 }
 
 /*sortL*/
-bool compare_hop_constrained_two_hop_label(hop_constrained_two_hop_label &i, hop_constrained_two_hop_label &j)
+static bool compare_hop_constrained_two_hop_label(hop_constrained_two_hop_label &i, hop_constrained_two_hop_label &j)
 {
 	if (i.hub_vertex != j.hub_vertex)
 	{
@@ -386,7 +386,7 @@ bool compare_hop_constrained_two_hop_label(hop_constrained_two_hop_label &i, hop
 	}
 }
 
-vector<vector<hop_constrained_two_hop_label>> hop_constrained_sortL(int num_of_threads)
+static vector<vector<hop_constrained_two_hop_label>> hop_constrained_sortL(int num_of_threads)
 {
 
 	/*time complexity: O(V*L*logL), where L is average number of labels per
@@ -419,7 +419,7 @@ vector<vector<hop_constrained_two_hop_label>> hop_constrained_sortL(int num_of_t
 }
 
 /*canonical_repair*/
-void hop_constrained_clean_L(hop_constrained_case_info &case_info, int thread_num)
+static void hop_constrained_clean_L(hop_constrained_case_info &case_info, int thread_num)
 {
 
 	auto &L = case_info.L;
@@ -511,7 +511,7 @@ void hop_constrained_clean_L(hop_constrained_case_info &case_info, int thread_nu
 }
 
 // return the uncleaned labels
-void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info, 
+static void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info, 
 	vector<vector<hop_constrained_two_hop_label>>& uncleaned_L)
 {
 

@@ -5,7 +5,7 @@
 may not be connected.*/
 
 template <typename weight_type>
-graph_v_of_v<weight_type> graph_v_of_v_generate_random_graph(long long int V, long long int E, double ec_min, double ec_max,
+static graph_v_of_v<weight_type> graph_v_of_v_generate_random_graph(long long int V, long long int E, double ec_min, double ec_max,
 	int input_precision, boost::random::mt19937& boost_random_time_seed) { // must use long long int for large V E
 
 	/*time complexity: O(|V||E|)*/

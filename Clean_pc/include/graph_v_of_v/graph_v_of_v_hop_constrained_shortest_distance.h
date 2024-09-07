@@ -4,7 +4,7 @@
 /* this func get all distances from source with hop constraint */
 
 template<typename T>
-void graph_v_of_v_hop_constrained_shortest_distance(graph_v_of_v<T>& instance_graph, int source, int hop_cst, vector<T>& distance) {
+static void graph_v_of_v_hop_constrained_shortest_distance(graph_v_of_v<T>& instance_graph, int source, int hop_cst, vector<T>& distance) {
 
 	int N = instance_graph.size();
 

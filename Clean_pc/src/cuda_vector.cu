@@ -1,4 +1,5 @@
-#include <tool_functions/cuda_vector.cuh>
+#include <HBPLL/cuda_vector.cuh>
+#include <cuda_runtime.h>
 
 template <typename T>
 __host__ base_memory<T>::base_memory(size_t size_per_block, size_t capacity) {

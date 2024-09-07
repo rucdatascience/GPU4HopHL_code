@@ -50,14 +50,14 @@ run.sh)
 #include <text_mining/print_items.h>
 
 #define DATASET_PATH "../../data/email-Enron2.txt"
-string reach_limit_error_string_MB = "reach limit error MB";
-string reach_limit_error_string_time = "reach limit error time";
+static string reach_limit_error_string_MB = "reach limit error MB";
+static string reach_limit_error_string_time = "reach limit error time";
 
-boost::random::mt19937 boost_random_time_seed{
+static boost::random::mt19937 boost_random_time_seed{
 	static_cast<std::uint32_t>(std::time(0))
 };
 
-void hop_constrained_check_correctness(hop_constrained_case_info &case_info, graph_v_of_v<int> &instance_graph, int iteration_source_times, int iteration_terminal_times, int upper_k)
+static void hop_constrained_check_correctness(hop_constrained_case_info &case_info, graph_v_of_v<int> &instance_graph, int iteration_source_times, int iteration_terminal_times, int upper_k)
 {
 
 	boost::random::uniform_int_distribution<> vertex_range{
@@ -133,7 +133,7 @@ void hop_constrained_check_correctness(hop_constrained_case_info &case_info, gra
 	}
 }
 
-void test_HSDL(graph_v_of_v<int>& instance_graph)
+static void test_HSDL(graph_v_of_v<int>& instance_graph)
 {
 
 	/* problem parameters */

@@ -14,14 +14,14 @@ struct graph_v_of_v_node_for_sp {
 	int index;
 	double priority_value;
 }; // define the node in the queue
-bool operator<(graph_v_of_v_node_for_sp const& x, graph_v_of_v_node_for_sp const& y) {
+static bool operator<(graph_v_of_v_node_for_sp const& x, graph_v_of_v_node_for_sp const& y) {
 	return x.priority_value > y.priority_value; // < is the max-heap; > is the min heap
 }
 typedef typename boost::heap::fibonacci_heap<graph_v_of_v_node_for_sp>::handle_type handle_t_for_graph_v_of_v_sp;
 
 
 template<typename T> // T is float or double
-void graph_v_of_v_shortest_paths(graph_v_of_v<T>& input_graph, int source, std::vector<T>& distances, std::vector<int>& predecessors) {
+static void graph_v_of_v_shortest_paths(graph_v_of_v<T>& input_graph, int source, std::vector<T>& distances, std::vector<int>& predecessors) {
 
 	/*Dijkstra's shortest path algorithm: https://www.geeksforgeeks.org/dijkstras-shortest-path-algorithm-greedy-algo-7/
 	time complexity: O(|E|+|V|log|V|);

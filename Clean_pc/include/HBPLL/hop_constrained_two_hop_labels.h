@@ -35,12 +35,12 @@ namespace std
 } // namespace std
 
 // 定义等价性比较操作符
-bool operator==(const hop_constrained_two_hop_label &lhs, const hop_constrained_two_hop_label &rhs)
+static bool operator==(const hop_constrained_two_hop_label &lhs, const hop_constrained_two_hop_label &rhs)
 {
 	return lhs.hub_vertex == rhs.hub_vertex && lhs.parent_vertex == rhs.parent_vertex && lhs.hop == rhs.hop && lhs.distance == rhs.distance;
 }
 
-bool operator<(hop_constrained_two_hop_label const &x, hop_constrained_two_hop_label const &y)
+static bool operator<(hop_constrained_two_hop_label const &x, hop_constrained_two_hop_label const &y)
 {
 	if (x.distance != y.distance)
 	{
@@ -142,7 +142,7 @@ public:
 	}
 };
 
-int hop_constrained_extract_distance(vector<vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst)
+static int hop_constrained_extract_distance(vector<vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst)
 {
 
 	/*return std::numeric_limits<int>::max() is not connected*/
@@ -222,7 +222,7 @@ int hop_constrained_extract_distance(vector<vector<hop_constrained_two_hop_label
 	return distance;
 }
 
-vector<pair<int, int>> hop_constrained_extract_shortest_path(vector<vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst)
+static vector<pair<int, int>> hop_constrained_extract_shortest_path(vector<vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst)
 {
 
 	vector<pair<int, int>> paths;

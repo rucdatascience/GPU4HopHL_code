@@ -13,7 +13,7 @@ https://blog.csdn.net/EbowTang/article/details/50770315
 */
 
 template <typename T>
-bool sorted_vector_binary_operations_search(
+static bool sorted_vector_binary_operations_search(
     std::vector<std::pair<int, T>> &input_vector, int key) {
 
   /*return true if key is in vector; time complexity O(log n)*/
@@ -36,7 +36,7 @@ bool sorted_vector_binary_operations_search(
 }
 
 template <typename T>
-T sorted_vector_binary_operations_search_weight(
+static T sorted_vector_binary_operations_search_weight(
     std::vector<std::pair<int, T>> &input_vector, int key) {
 
   /*return std::numeric_limits<T>::max() if key is not in vector; time
@@ -60,7 +60,7 @@ T sorted_vector_binary_operations_search_weight(
 }
 
 template <typename T>
-int sorted_vector_binary_operations_search_position(
+static int sorted_vector_binary_operations_search_position(
     std::vector<std::pair<int, T>> &input_vector, int key) {
 
   /*return -1 if key is not in vector; time complexity O(log n)*/
@@ -82,7 +82,7 @@ int sorted_vector_binary_operations_search_position(
 }
 
 template <typename T>
-void sorted_vector_binary_operations_erase(
+static void sorted_vector_binary_operations_erase(
     std::vector<std::pair<int, T>> &input_vector, int key) {
 
   /*erase key from vector; time complexity O(log n + size()-position ), which is
@@ -106,7 +106,7 @@ void sorted_vector_binary_operations_erase(
   }
 }
 template <typename T>
-int sorted_vector_binary_operations_insert(std::vector<std::pair<int, T>> &input_vector, int key, T load) {
+static int sorted_vector_binary_operations_insert(std::vector<std::pair<int, T>> &input_vector, int key, T load) {
     // 使用 std::lower_bound 查找适当的插入位置
     auto it = std::lower_bound(input_vector.begin(), input_vector.end(), std::make_pair(key, load),
                                [](const std::pair<int, T>& a, const std::pair<int, T>& b) {

@@ -5,7 +5,7 @@
 #include <fstream>
 
 template<typename T>
-void binary_save_vector(std::string path, std::vector<T>& myVector)
+static void binary_save_vector(std::string path, std::vector<T>& myVector)
 {
     std::ofstream FILE(path, std::ios::out | std::ofstream::binary);
 
@@ -23,7 +23,7 @@ void binary_save_vector(std::string path, std::vector<T>& myVector)
 }
 
 template<typename T>
-void binary_read_vector(std::string path, std::vector<T>& myVector)
+static void binary_read_vector(std::string path, std::vector<T>& myVector)
 {
     std::vector<T>().swap(myVector);
 
@@ -58,7 +58,7 @@ int main()
 ------------------------------------
 */
 
-void example_binary_save_read_vector() {
+static void example_binary_save_read_vector() {
 
     std::vector<int> a = { 1, 2, 4 };
     binary_save_vector("b.txt", a);
