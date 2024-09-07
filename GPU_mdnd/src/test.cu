@@ -92,7 +92,7 @@ int main () {
     int iteration_source_times = 1000, iteration_terminal_times = 1000;
 
     // 样例图参数
-    int V = 1000, E = 5000;
+    int V = 10000, E = 50000;
     // scanf("%d %d", &V, &E);
     
     int upper_k = 5;
@@ -104,7 +104,7 @@ int main () {
 	info_cpu.use_2023WWW_generation = 0;
 	info_cpu.use_canonical_repair = 1;
 	info_cpu.max_run_time_seconds = 10;
-    info_cpu.thread_num = 10;
+    info_cpu.thread_num = 100;
     
     hop_constrained_case_info_v2 *info_gpu = new hop_constrained_case_info_v2();
     info_gpu->use_d_optimization = 1;
@@ -163,11 +163,45 @@ int main () {
 
     }
     
+    // info_cpu.print_L();
+    // 比较cpu和gpu的label看看哪里有问题
+    for (int i = 0; i < V; ++i) {
+        // printf("%d: %d %d", i, L[i].size(), info_cpu.L[i].size());
+        // if (L[i].size() != info_cpu.L[i].size()){
+        //     printf(" dd");
+        // }
+        // puts("");
+        for (int j = 0; j < info_cpu.L[i].size(); ++j) {
+            int tag = 0;
+            for (int k = 0; k < L[i].size(); ++k) {
+                // printf("%d %d %d\n", info_cpu.L[i][j].hub_vertex, info_cpu.L[i][j].hop, info_cpu.L[i][j].distance);
+                if (info_cpu.L[i][j].hub_vertex == L[i][k].hub_vertex && 
+                    info_cpu.L[i][j].hop == L[i][k].hop && 
+                    info_cpu.L[i][j].distance == L[i][k].distance) {
+                        tag = 1;
+                        break;
+                }
+            }
+            if (tag == 0) {
+                // printf("%d %d %d\n", info_cpu.L[i][j].hub_vertex, info_cpu.L[i][j].hop, info_cpu.L[i][j].distance);
+                // for (int k = 0; k < L[i].size(); ++k) {
+                //     if (info_cpu.L[i][j].hub_vertex == L[i][k].hub_vertex && 
+                //         info_cpu.L[i][j].hop == L[i][k].hop) {
+                //             printf("%d %d %d %d %d\n", i, info_cpu.L[i][j].hub_vertex, 
+                //             info_cpu.L[i][j].hop, info_cpu.L[i][j].distance
+                //             , L[i][k].distance);
+                //             break;
+                //     }
+                // }
+            }
+        }
+    }
+
     // 输出详细记录
     if (print_details) {
         printf("CPU Lable Size: %.5lf\n", info_cpu.label_size);
         printf("GPU Lable Size: %.5lf\n", info_gpu->label_size);
-        printf("CPU Time Generation: %.5lf\n", info_cpu.time_generate_labels);
+        printf("CPU Time Generation: %.5lf\n", info_cpu.time_generate_labels + info_cpu.time_canonical_repair);
         printf("GPU Time Generation: %.5lf\n", info_gpu->time_generate_labels);
     }
 

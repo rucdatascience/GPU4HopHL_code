@@ -628,6 +628,7 @@ void hop_constrained_two_hop_labels_generation(
 
 	case_info.time_total = case_info.time_initialization + case_info.time_generate_labels + case_info.time_sortL + case_info.time_canonical_repair;
 	case_info.compute_label_size_per_node(N);
-	
+	// case_info.print_L();
+
 	hop_constrained_clear_global_values();
 }

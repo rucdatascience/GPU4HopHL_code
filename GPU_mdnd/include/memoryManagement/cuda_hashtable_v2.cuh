@@ -25,11 +25,14 @@ public:
     }
 
     // 修改函数
-    __host__ __device__ void modify (const int pos, const int val) {
+    __device__ void modify (const int pos, const int val) {
         table[pos] = val;
+        __threadfence();
     }
-    __host__ __device__ void modify (const int vertex, const int hop, const int hop_cst, const int val) {
+    
+    __device__ void modify (const int vertex, const int hop, const int hop_cst, const int val) {
         table[vertex * (hop_cst + 1) + hop] = val;
+        __threadfence();
     }
 
     // 查询函数

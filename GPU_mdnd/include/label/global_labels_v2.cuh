@@ -10,6 +10,8 @@
 class hop_constrained_case_info_v2 {
 public:
     /*labels*/
+    vector<vector<hub_type> > L_cpu;
+
     mmpool_v2<hub_type> *mmpool_labels = NULL;
     mmpool_v2<T_item> *mmpool_T0 = NULL;
     mmpool_v2<T_item> *mmpool_T1 = NULL;

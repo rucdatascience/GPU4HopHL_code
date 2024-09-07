@@ -23,29 +23,32 @@ public:
     __host__ mmpool_v2(int V, int num_blocks = 100);
 
     // 获取内存池元素个数
-    __host__ __device__ size_t size();
+    __host__ __device__ int size();
 
     // 析构函数
     __host__ __device__ ~mmpool_v2();
 
-    __host__ __device__ bool is_full_block(const int &block_idx);
+    __host__ __device__ bool is_full_block (const int &block_idx);
 
-    __host__ __device__ bool is_valid_block(const int &block_idx);
+    __host__ __device__ bool is_valid_block (const int &block_idx);
 
     // 添加节点到内存池中指定块尾
-    __device__ bool push_node(const int &block_idx, const T &node_data);
+    __device__ bool push_node (const int &block_idx, const T &node_data);
 
     // 查找内存池中指定行的指定下标的块
-    __host__ __device__ T *get_node(const int &block_idx, const int &node_idx);
+    __device__ T *get_node (const int &block_idx, const int &node_idx);
+    __host__ T *get_node_host (const int &block_idx, const int &node_idx);
 
     // 获取一个新的块
-    __device__ int get_new_block(const int &block_idx);
+    __device__ int get_new_block (const int &block_idx);
 
     // 获取块大小
-    __host__ __device__ int get_block_size(const int &block_idx);
+    __device__ int get_block_size (const int &block_idx);
     
+    __host__ int get_block_size_host (const int &block_idx);
+
     // 修改指定 blocks_state 的值
-    __host__ __device__ void set_blocks_state(const int &block_idx, const int &value);
+    __device__ void set_blocks_state (const int &block_idx, const int &value);
 
     // 获取块的数量
     __host__ __device__ int get_num_blocks() { return num_blocks; }
@@ -54,7 +57,7 @@ public:
     __host__ __device__ int get_nodes_per_block() { return nodes_per_block; }
 
     // 设置块的节点数量
-    __host__ __device__ void set_block_user_nodes(const int &block_idx, const int &num) {
+    __host__ __device__ void set_block_user_nodes (const int &block_idx, const int &num) {
         blocks_state[block_idx] = -num;
     }
 
@@ -81,8 +84,8 @@ template <typename T> __host__ mmpool_v2<T>::mmpool_v2(int V, int num_blocks) : 
 }
 
 // 获取内存池元素个数
-template <typename T> __host__ __device__ size_t mmpool_v2<T>::size() {
-    size_t size = 0;
+template <typename T> __host__ __device__ int mmpool_v2<T>::size() {
+    int size = 0;
     for (int i = 0; i < num_blocks; ++i) {
         if (blocks_state[i] < 0){
             size -= blocks_state[i];
@@ -110,10 +113,14 @@ template <typename T> __host__ __device__ bool mmpool_v2<T>::is_valid_block(cons
 
 // 添加节点到内存池
 template <typename T> __device__ bool mmpool_v2<T>::push_node(const int &block_idx, const T &node_data) {
-
+    // printf(" ");
     // 修改块元素内容
+    
     blocks_pool[block_idx].data[-blocks_state[block_idx]] = node_data;
+    // __threadfence_system();
+    // atomicSub(&(blocks_state[block_idx]), 1);
     blocks_state[block_idx]--;
+    __threadfence_system();
     
 }
 
@@ -122,29 +129,66 @@ template <typename T> __device__ int mmpool_v2<T>::get_new_block(const int &bloc
     bool blocked = true;
     while (blocked) {
         if (atomicCAS(&this->lock, 0, 1) == 0) {
-            // printf("a new block!! %d %d %d\n", block_idx, last_empty_block_idx, num_blocks);
+            if (last_empty_block_idx >= num_blocks) {
+                printf("error with blocks num!\b");
+            }
+            // printf(" ");
             blocks_state[last_empty_block_idx] = 0;
-            blocks_state[block_idx] = last_empty_block_idx ++;
-            __threadfence();
+            // __threadfence_system();
+            blocks_state[block_idx] = last_empty_block_idx;
+            // __threadfence_system();
+            atomicAdd(&last_empty_block_idx, 1);
+            // last_empty_block_idx ++;
+            // __threadfence_system();
             atomicExch(&this->lock, 0); // 释放锁
             blocked = false;
         }
     }
-    return blocks_state[block_idx];
+    int x = blocks_state[block_idx];
+    // __threadfence_system();
+    return x;
 }
 
-template <typename T> __host__ __device__ int mmpool_v2<T>::get_block_size(const int &block_idx) {
-    if (blocks_state[block_idx] > 0) return nodes_per_block;
-    else return -blocks_state[block_idx];
+template <typename T> __device__ int mmpool_v2<T>::get_block_size(const int &block_idx) {
+    int x = 0;
+    if (blocks_state[block_idx] > 0) {
+        // __threadfence_system();
+        x = nodes_per_block;
+        // __threadfence_system();
+    }else{
+        // __threadfence_system();
+        x = -blocks_state[block_idx];
+        // __threadfence_system();
+    }
+    return x;
 }
 
-template <typename T> __host__ __device__ void mmpool_v2<T>::set_blocks_state(const int &block_idx, const int &value) {
+template <typename T> __host__ int mmpool_v2<T>::get_block_size_host(const int &block_idx) {
+    int x = 0;
+    if (blocks_state[block_idx] > 0) {
+        x = nodes_per_block;
+    }else{
+        x = -blocks_state[block_idx];
+    }
+    return x;
+}
+
+template <typename T> __device__ void mmpool_v2<T>::set_blocks_state(const int &block_idx, const int &value) {
     blocks_state[block_idx] = value;
+    __threadfence_system();
 }
 
 // 查找内存池中指定行的指定下标的块
-template <typename T> __host__ __device__ T *mmpool_v2<T>::get_node(const int &block_idx, const int &node_idx) {
-    return &(blocks_pool[block_idx].data[node_idx]);
+template <typename T> __device__ T *mmpool_v2<T>::get_node(const int &block_idx, const int &node_idx) {
+    T *ret = &(blocks_pool[block_idx].data[node_idx]);
+    // __threadfence_system();
+    // printf(" ");
+    return ret;
+}
+
+template <typename T> __host__ T *mmpool_v2<T>::get_node_host(const int &block_idx, const int &node_idx) {
+    T *ret = &(blocks_pool[block_idx].data[node_idx]);
+    return ret;
 }
 
 #endif
