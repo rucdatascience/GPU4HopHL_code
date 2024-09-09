@@ -94,19 +94,9 @@ __global__ void clean_kernel_v2 (int V, int K, int tc, int start_id, int end_id,
     }
 
     long long label_idx = L_start[start_id] + tid;
-    
-    // if (label_idx == L_start[end_id + 1] - 1) {
-    //     printf("shit1\n");
-    // }
-    // if (label_idx == L_start[end_id + 1]) {
-    //     printf("shit2\n");
-    // }
 
     int nid = node_id[label_idx];
-    // printf("nid: %d\n", nid);
-    int v = L[label_idx].v;
-    int h_v = L[label_idx].h;
-    int d_v = L[label_idx].d;
+    int v = L[label_idx].v, h_v = L[label_idx].h, d_v = L[label_idx].d;
 
     long long offset = (nid - start_id) * V * (K + 1);
     
@@ -125,10 +115,15 @@ __global__ void clean_kernel_v2 (int V, int K, int tc, int start_id, int end_id,
             continue;
         }
 
-        long long offset2 = offset + vx * (K + 1);
-        if ((long long)hash_array[offset2 + h_v - h_vx] + d_vx <= d_v) {
-            mark[label_idx] = 1;
-            break;
+        // long long offset2 = offset + vx * (K + 1);
+        int new_dis = (hash_array + offset)[vx * (K + 1) + h_v - h_vx];
+        if (new_dis != INT_MAX) {
+            new_dis = new_dis + d_vx;
+            // update_dis = min(update_dis, new_dis);
+            if (new_dis <= d_v) {
+                mark[label_idx] = 1;
+                break;
+            }
         }
     }
 }
@@ -277,7 +272,7 @@ double gpu_clean(graph_v_of_v<int> &input_graph, vector<vector<label>> &input_L,
     // cudaDeviceSynchronize();
     // clean_kernel <<< (tc + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>> (V, K, tc, L, L_start, hash_array, mark);
     // cudaDeviceSynchronize();
-
+    
     // 将L(csr)转为res(vector<vector>)
     for (int i = 0; i < V; ++i)
     {
@@ -295,9 +290,9 @@ double gpu_clean(graph_v_of_v<int> &input_graph, vector<vector<label>> &input_L,
             }
         }
     }
-
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
+    
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
     double GPU_clean_time = milliseconds / 1e3;

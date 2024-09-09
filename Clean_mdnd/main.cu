@@ -13,7 +13,7 @@ record_info main_element () {
     record_info record_info_case;
 
     int ec_min = 1, ec_max = 10;
-    int V = 10000, E = 50000, tc = V;
+    int V = 10000, E = 50000, tc = 2000;
 
     std::ios::sync_with_stdio(0);
     std::cin.tie(0);
@@ -36,7 +36,7 @@ record_info main_element () {
     vector<vector<hop_constrained_two_hop_label>> uncleaned_L;
 
     hop_constrained_two_hop_labels_generation(instance_graph, mm, uncleaned_L);
-    // hop_constrained_check_correctness(mm, instance_graph, 10, 10, 5);
+    hop_constrained_check_correctness(mm, instance_graph, 10, 10, 5);
     std::cout << "CPU Clean Time: " << mm.time_canonical_repair << "s" << endl;
     record_info_case.CPU_Clean_Time = mm.time_canonical_repair;
 
@@ -117,7 +117,7 @@ record_info main_element () {
     // }
 
     mm.L = L_gpu;
-    // hop_constrained_check_correctness(mm, instance_graph, 10, 10, 5);
+    hop_constrained_check_correctness(mm, instance_graph, 10, 10, 5);
 
     //Lc[0]->pool->~base_memory();
     // cudaFree(Lc[0]->pool);
