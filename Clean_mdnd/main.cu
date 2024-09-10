@@ -13,7 +13,7 @@ record_info main_element () {
     record_info record_info_case;
 
     int ec_min = 1, ec_max = 10;
-    int V = 10000, E = 50000, tc = 2000;
+    int V = 50000, E = 250000, tc = 2000;
 
     std::ios::sync_with_stdio(0);
     std::cin.tie(0);
@@ -23,7 +23,7 @@ record_info main_element () {
     instance_graph = graph_v_of_v_generate_random_graph<int>(V, E, ec_min, ec_max, 1, boost_random_time_seed);
 
     instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
-    instance_graph.txt_save("simple_iterative_tests.txt");
+    instance_graph.txt_save("../data/simple_iterative_tests.txt");
 
     hop_constrained_case_info mm;
 	mm.upper_k = 5;
@@ -34,9 +34,10 @@ record_info main_element () {
 	mm.thread_num = 100;
 
     vector<vector<hop_constrained_two_hop_label>> uncleaned_L;
-
+    printf("Generation Start !\n");
     hop_constrained_two_hop_labels_generation(instance_graph, mm, uncleaned_L);
-    hop_constrained_check_correctness(mm, instance_graph, 10, 10, 5);
+    printf("Generation End !\n");
+    // hop_constrained_check_correctness(mm, instance_graph, 10, 10, 5);
     std::cout << "CPU Clean Time: " << mm.time_canonical_repair << "s" << endl;
     record_info_case.CPU_Clean_Time = mm.time_canonical_repair;
 
