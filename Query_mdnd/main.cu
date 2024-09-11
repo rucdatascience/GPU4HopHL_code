@@ -5,7 +5,7 @@
 #include "HBPLL/gpu_query.cuh"
 #include <boost/random.hpp>
 
-int main (int argc,char **argv) {
+int main (int argc, char **argv) {
 
     int ec_min = 1, ec_max = 10, upper_k = 5;
     int V = 10000, E = 50000, tc = 2000;
@@ -29,10 +29,11 @@ int main (int argc,char **argv) {
 
     for (int i = 0; i < query_num; i++) {
         que[i] = query_info(rnd_s(boost_random_time_seed), rnd_t(boost_random_time_seed), rnd_h(boost_random_time_seed));
+        ans_cpu[i] = ans_gpu[i] = INT_MAX;
     }
 
     graph_v_of_v<int> instance_graph;
-    instance_graph = graph_v_of_v_generate_random_graph<int>(V, E, ec_min, ec_max, 1, boost_random_time_seed);
+    instance_graph = graph_v_of_v_generate_random_graph <int> (V, E, ec_min, ec_max, 1, boost_random_time_seed);
 
     instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
     instance_graph.txt_save("../data/simple_iterative_tests.txt");
@@ -72,11 +73,13 @@ int main (int argc,char **argv) {
     }
 
     double GPU_clean_time = gpu_query(instance_graph, L, query_num, que, ans_gpu, mm.upper_k);
-    std::cout << fixed << setprecision(10) << "GPU query time: " << GPU_clean_time << "s"  << endl;
+    std::cout << fixed << setprecision(10) << "GPU query Time: " << GPU_clean_time << "s"  << endl;
 
     int check = 1;
     for (int i = 0; i < query_num; ++i) {
+        // std::cout << ans_cpu[i] << ", " << ans_gpu[i] << endl;
         if (ans_cpu[i] != ans_gpu[i]) {
+            std::cout << i << ": " << ans_cpu[i] << ", " << ans_gpu[i] << endl;
             check = 0;
             break;
         }
@@ -84,7 +87,7 @@ int main (int argc,char **argv) {
     if (check) {
         printf("check pass !\n");
     }else{
-        printf("check not pass !\n");    
+        printf("check not pass !\n");
     }
 
     return 0;
