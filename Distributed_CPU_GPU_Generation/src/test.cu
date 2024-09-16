@@ -19,6 +19,14 @@
 
 vector<vector<hub_type> > L;
 vector<vector<hub_type> > L_gpu, L_cpu;
+
+hop_constrained_case_info info_cpu;
+hop_constrained_case_info_v2 *info_gpu;
+
+graph_v_of_v<int> instance_graph;
+CSR_graph<weight_type> csr_graph;
+Graph_pool<int> graph_pool;
+
 boost::random::mt19937 boost_random_time_seed{static_cast<std::uint32_t>(std::time(0))}; // 随机种子 
 
 int hop_constrained_extract_distance(vector<vector<hub_type>> &L, int source, int terminal, int hop_cst) {
@@ -138,7 +146,7 @@ void query_mindis_with_hub_host (int V, int x, int y, int hop_cst,
     }
 }
 
-void GPU_HSDL_checker (hop_constrained_case_info_v2 *info,  vector<vector<hub_type> >&L, graph_v_of_v<int> &instance_graph,
+void GPU_HSDL_checker (hop_constrained_case_info_v2 *info,  vector<vector<hub_type> >&LL, graph_v_of_v<int> &instance_graph,
                             int iteration_source_times, int iteration_terminal_times, int hop_bounded) {
 
     boost::random::uniform_int_distribution<> vertex_range{ static_cast<int>(0), static_cast<int>(instance_graph.size() - 1) };
@@ -161,7 +169,7 @@ void GPU_HSDL_checker (hop_constrained_case_info_v2 *info,  vector<vector<hub_ty
                 int terminal = vertex_range(boost_random_time_seed);
 
                 weight_type q_dis = 0;
-                q_dis = hop_constrained_extract_distance(L_gpu, source, terminal, hop_cst);
+                q_dis = hop_constrained_extract_distance(LL, source, terminal, hop_cst);
                 if (abs(q_dis - distances[terminal]) > 1e-2 ) {
                     cout << "source, terminal, hopcst = " << source << ", "<< terminal << ", " << hop_cst << endl;
                     cout << fixed << setprecision(5) << "dis = " << q_dis << endl;
@@ -181,9 +189,24 @@ void GPU_HSDL_checker (hop_constrained_case_info_v2 *info,  vector<vector<hub_ty
     return;
 }
 
-void Cosumer_GPU1 () {
-
+void cosumer_cpu () {
+    int x;
+    while ((x = graph_pool.get_next_graph()) != -1) {
+        printf("cpu x: %d\n", x);
+        hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L_cpu, graph_pool.graph_group[x]);
+    }
+    printf("generation cpu complete !\n");
 }
+
+void cosumer_gpu () {
+    int x;
+    while ((x = graph_pool.get_next_graph()) != -1) {
+        printf("gpu x: %d\n", x);
+        label_gen(csr_graph, info_gpu, L_gpu, graph_pool.graph_group[x]);
+    }
+    printf("generation gpu complete !\n");
+}
+
 int main () {
     
     // 测试次数参数
@@ -191,13 +214,12 @@ int main () {
     int iteration_source_times = 100, iteration_terminal_times = 5000;
 
     // 样例图参数
-    int V = 10000, E = 50000, Distributed_Graph_Num = 10;
+    int V = 10000, E = 50000, Distributed_Graph_Num = 20;
     
     int hop_cst = 5, thread_num = 1000;
     double ec_min = 1, ec_max = 10;
 
     // cpu info
-    hop_constrained_case_info info_cpu;
     info_cpu.upper_k = hop_cst;
 	info_cpu.use_rank_prune = 1;
 	info_cpu.use_2023WWW_generation = 0;
@@ -206,7 +228,7 @@ int main () {
     info_cpu.thread_num = 100;
     
     // gpu info
-    hop_constrained_case_info_v2 *info_gpu = new hop_constrained_case_info_v2();
+    info_gpu = new hop_constrained_case_info_v2();
     info_gpu->init(V, V * V * (hop_cst + 1), hop_cst, thread_num);
     printf("init case_info success\n");
     info_gpu->hop_cst = hop_cst;
@@ -223,7 +245,8 @@ int main () {
             Distributed_Graph[i].push_back(j);
         }
     }
-    Graph_pool<int> graph_pool(Distributed_Graph_Num);
+    graph_pool.graph_group.resize(Distributed_Graph_Num);
+    // Graph_pool<int> graph_pool(Distributed_Graph_Num);
     graph_pool.graph_group = Distributed_Graph;
 
     /* test parameters */
@@ -245,7 +268,6 @@ int main () {
     for (int i = 0; i < iteration_graph_times; i++) {
 
         // 生成图
-        graph_v_of_v<int> instance_graph;
         if (generate_new_graph) {
             instance_graph = graph_v_of_v_generate_random_graph<int>(V, E, ec_min, ec_max, 1, boost_random_time_seed);
             instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
@@ -253,48 +275,73 @@ int main () {
         }else{
             instance_graph.txt_read("../data/simple_iterative_tests.txt");
         }
-    
+
         // 通过 instance_graph 生成 CSR_graph
         LDBC<weight_type> graph(V);
         graph_v_of_v_to_LDBC(graph, instance_graph);
-        CSR_graph<weight_type> csr_graph = toCSR(graph);
+        csr_graph = toCSR(graph);
+
+        // distributed cpu gpu generation
+        std::thread thread_cpu (cosumer_cpu);
+        std::thread thread_gpu (cosumer_gpu);
+        thread_gpu.join();
+        thread_cpu.join();
         
-        // label generation GPU
-        printf("generate gpu !\n");
-        for (int j = 0; j < Distributed_Graph_Num; ++j) {
-            label_gen(csr_graph, info_gpu, L_gpu, graph_pool.graph_group[j]);
+        printf("generation complete !\n");
+
+        for (int i = 0; i < V; ++i){
+            for (int j = 0; j < L_gpu[i].size(); ++j) {
+                hub_type x = L_gpu[i][j];
+                L[i].push_back({x.hub_vertex, x.hop, x.distance});
+            }
+            for (int j = 0; j < L_cpu[i].size(); ++j) {
+                hub_type x = L_cpu[i][j];
+                L[i].push_back({x.hub_vertex, x.hop, x.distance});
+            }
         }
+
         for (int v_k = 0; v_k < V; ++ v_k) {
-            sort(L_gpu[v_k].begin(), L_gpu[v_k].end(), compare_hop_constrained_two_hop_label_v2);
+            sort(L[v_k].begin(), L[v_k].end(), compare_hop_constrained_two_hop_label_v2);
         }
 
-        // label generation CPU
-        printf("generate cpu !\n");
-        for (int j = 0; j < Distributed_Graph_Num; ++j) {
-            hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L_cpu, graph_pool.graph_group[j]);
-        }
-        printf("generate cpu end !\n");
-        for (int v_k = 0; v_k < V; ++ v_k) {
-            sort(L_cpu[v_k].begin(), L_cpu[v_k].end(), compare_hop_constrained_two_hop_label_v2);
-        }
-        // hop_constrained_two_hop_labels_generation(instance_graph, info_cpu);
-
-        // 检验 GPU 正确性
-        if (check_correctness_gpu) {
-            printf("check gpu !\n");
-            GPU_HSDL_checker(info_gpu, L_gpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
-        }
-
-        // 检验 CPU 正确性
         if (check_correctness_cpu) {
-            printf("check cpu !\n");
-            GPU_HSDL_checker(info_gpu, L_cpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
+            printf("check distributed cpu gpu !\n");
+            GPU_HSDL_checker(info_gpu, L, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
         }
 
-        // 输出标签
-        if (print_L) {
+        // // label generation GPU
+        // for (int j = 0; j < Distributed_Graph_Num; ++j) {
+        //     label_gen(csr_graph, info_gpu, L_gpu, graph_pool.graph_group[j]);
+        // }
+        // for (int v_k = 0; v_k < V; ++ v_k) {
+        //     sort(L_gpu[v_k].begin(), L_gpu[v_k].end(), compare_hop_constrained_two_hop_label_v2);
+        // }
 
-        }
+        // // label generation CPU
+        // for (int j = 0; j < Distributed_Graph_Num; ++j) {
+        //     hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L_cpu, graph_pool.graph_group[j]);
+        // }
+        // for (int v_k = 0; v_k < V; ++ v_k) {
+        //     sort(L_cpu[v_k].begin(), L_cpu[v_k].end(), compare_hop_constrained_two_hop_label_v2);
+        // }
+        // // hop_constrained_two_hop_labels_generation(instance_graph, info_cpu);
+
+        // // 检验 GPU 正确性
+        // if (check_correctness_gpu) {
+        //     printf("check gpu !\n");
+        //     GPU_HSDL_checker(info_gpu, L_gpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
+        // }
+
+        // // 检验 CPU 正确性
+        // if (check_correctness_cpu) {
+        //     printf("check cpu !\n");
+        //     GPU_HSDL_checker(info_gpu, L_cpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
+        // }
+
+        // // 输出标签
+        // if (print_L) {
+
+        // }
 
     }
     
@@ -308,10 +355,16 @@ int main () {
         label_size_cpu += L_cpu[i].size();
     }
 
+    int label_size_total = 0;
+    for (int i = 0; i < V; ++i) {
+        label_size_total += L[i].size();
+    }
+
     // 输出详细记录
     if (print_details) {
         printf("CPU Lable Size: %.6lf\n", (double)label_size_cpu / V);
         printf("GPU Lable Size: %.6lf\n", (double)label_size_gpu / V);
+        printf("Total Lable Size: %.6lf\n", (double)label_size_total / V);
         printf("CPU Time Generation: %.6lf\n", info_cpu.time_generate_labels);
         printf("GPU Time Generation: %.6lf\n", info_gpu->time_generate_labels);
     }

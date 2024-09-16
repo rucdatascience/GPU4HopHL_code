@@ -486,7 +486,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
         // iter = 4 -> 生成 跳数 4
         // iter = 5 -> 生成 跳数 5
         
-        printf("iteration_hop: %d\n", iter);
+        // printf("iteration_hop: %d\n", iter);
 
         start_id = vertex_num;
         // end_id = -1;
