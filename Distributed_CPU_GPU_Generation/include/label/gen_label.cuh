@@ -1,12 +1,14 @@
 #ifndef GEN_LABEL_CUH
 #define GEN_LABEL_CUH
 
+#pragma once
 #include <graph/csr_graph.hpp>
 #include <label/global_labels_v2.cuh>
 #include "memoryManagement/cuda_hashtable_v2.cuh"
 #include "memoryManagement/cuda_vector_v2.cuh"
 #include "memoryManagement/mmpool_v2.cuh"
 #include "test/test_mmpool.cuh"
+#include <text_mining/ThreadPool.h>
 
 __device__ int query_dis_by_hash_table (int u, int v, cuda_hashTable_v2<weight_type> *H, cuda_vector_v2<hub_type> *L, int hop_now, int hop_cst);
 

@@ -576,7 +576,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     printf("time traverse labels: %.6lf\n", std::chrono::duration<double>(afterTime - beforeTime).count());
 
     info->label_size += label_size / (double)V;
-    printf("average label size: %.6lf\n", info->label_size);
+    printf("average label size: %.6lf\n", label_size / (double)V);
     printf("Generation end!\n");
     
     return;

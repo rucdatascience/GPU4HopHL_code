@@ -510,12 +510,9 @@ void hop_constrained_clean_L(hop_constrained_case_info &case_info, int thread_nu
 	case_info.canonical_repair_remove_label_ratio = (double)(label_size_before_canonical_repair_599 - label_size_after_canonical_repair_599) / label_size_before_canonical_repair_599;
 }
 
-void hop_constrained_two_hop_labels_generation(
-	graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info)
-{
+void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info) {
 
-	//----------------------------------- step 1: initialization
-	//-----------------------------------
+	// ----------------------------------- step 1: initialization -----------------------------------
 	auto begin = std::chrono::high_resolution_clock::now();
 
 	labal_size_599 = 0;
@@ -604,10 +601,7 @@ void hop_constrained_two_hop_labels_generation(
 	case_info.L = hop_constrained_sortL(num_of_threads);
 
 	end = std::chrono::high_resolution_clock::now();
-	case_info.time_sortL =
-		std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin)
-			.count() /
-		1e9; // s
+	case_info.time_sortL = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9; // s
 
 	//----------------------------------------------- step 4:
 	// canonical_repair---------------------------------------------------------------
@@ -629,6 +623,87 @@ void hop_constrained_two_hop_labels_generation(
 	case_info.time_total = case_info.time_initialization + case_info.time_generate_labels + case_info.time_sortL + case_info.time_canonical_repair;
 	case_info.compute_label_size_per_node(N);
 	// case_info.print_L();
+
+	hop_constrained_clear_global_values();
+}
+
+void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info, vector<vector<hub_type> >&L, vector<int> nid_vec) {
+
+	// ----------------------------------- step 1: initialization -----------------------------------
+	auto begin = std::chrono::high_resolution_clock::now();
+
+	labal_size_599 = 0;
+	begin_time_599 = std::chrono::high_resolution_clock::now();
+	max_run_time_nanoseconds_599 = case_info.max_run_time_seconds * 1e9;
+	max_labal_size_599 = case_info.max_bit_size / sizeof(hop_constrained_two_hop_label);
+	
+	int V = input_graph.size();
+	int N = nid_vec.size();
+	L_temp_599.resize(V);
+	if (V > max_N_ID_for_mtx_599) {
+		cout << "V > max_N_ID_for_mtx_599!" << endl;
+		exit(1);
+	}
+
+	int num_of_threads = case_info.thread_num;
+	ThreadPool pool(num_of_threads);
+	std::vector<std::future<int>> results;
+
+	ideal_graph_599 = input_graph;
+	// global_use_rank_prune = case_info.use_rank_prune;
+
+	auto end = std::chrono::high_resolution_clock::now();
+	case_info.time_initialization = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
+
+	// ----------------------------------------------- step 2: generate labels ---------------------------------------------------------------
+	begin = std::chrono::high_resolution_clock::now();
+
+	global_upper_k = case_info.upper_k == 0 ? std::numeric_limits<int>::max() : case_info.upper_k;
+
+	Temp_L_vk_599.resize(num_of_threads);
+	dist_hop_599.resize(num_of_threads);
+	Q_handle_priorities_599.resize(num_of_threads);
+	Vh_599.resize(num_of_threads);
+	hop_constrained_node_handle handle_x;
+
+	for (int i = 0; i < num_of_threads; i++) {
+		Temp_L_vk_599[i].resize(V);
+		dist_hop_599[i].resize(V, {std::numeric_limits<int>::max(), 0});
+		Q_handle_priorities_599[i].resize(V);
+		for (int j = 0; j < V; j++) {
+			Q_handle_priorities_599[i][j].resize(global_upper_k + 1, {handle_x, std::numeric_limits<int>::max()});
+		}
+		Vh_599[i].resize(global_upper_k + 2);
+		Qid_599.push(i);
+	}
+	if (case_info.use_2023WWW_generation) {
+		for (int v_k = 0; v_k < N; v_k++) {
+			int y = v_k;
+			int x = nid_vec[v_k];
+			results.emplace_back(pool.enqueue([x]{_2023WWW_thread_function(x); return 1;}));
+		}
+	} else {
+		int last_check_vID = N - 1;
+		for (int v_k = 0; v_k <= last_check_vID; v_k++) {
+			int y = v_k;
+			int x = nid_vec[v_k];
+			results.emplace_back(pool.enqueue([x]{HSDL_thread_function(x); return 1;}));
+		}
+	}
+
+	for (auto &&result : results)
+		result.get();
+
+	end = std::chrono::high_resolution_clock::now();
+	case_info.time_generate_labels += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9; // s
+	for (int v_k = 0; v_k < V; ++ v_k) {
+		for (int j = 0; j < L_temp_599[v_k].size(); ++ j) {
+			hop_constrained_two_hop_label x = L_temp_599[v_k][j];
+			L[v_k].push_back({x.hub_vertex, x.hop, x.distance});
+		}
+	}
+
+	case_info.time_total = case_info.time_initialization + case_info.time_generate_labels + case_info.time_sortL + case_info.time_canonical_repair;
 
 	hop_constrained_clear_global_values();
 }
