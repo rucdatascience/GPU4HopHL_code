@@ -143,8 +143,7 @@ void HSDL_thread_function(int v_k)
 		}
 		mtx_599[u].unlock();
 
-		if (P_u < query_v_k_u ||
-			query_v_k_u == 0)
+		if (P_u < query_v_k_u || query_v_k_u == 0)
 		{ // query_v_k_u == 0 is to start the while loop by
 			// searching neighbors of v_k
 
@@ -522,8 +521,7 @@ void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, 
 
 	int N = input_graph.size();
 	L_temp_599.resize(N);
-	if (N > max_N_ID_for_mtx_599)
-	{
+	if (N > max_N_ID_for_mtx_599) {
 		cout << "N > max_N_ID_for_mtx_599!" << endl;
 		exit(1);
 	}
@@ -627,6 +625,10 @@ void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, 
 	hop_constrained_clear_global_values();
 }
 
+inline void hop_constrained_two_hop_labels_generation_init() {
+
+}
+
 void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info, vector<vector<hub_type> >&L, vector<int> nid_vec) {
 
 	// ----------------------------------- step 1: initialization -----------------------------------
@@ -648,24 +650,24 @@ void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, 
 	int num_of_threads = case_info.thread_num;
 	ThreadPool pool(num_of_threads);
 	std::vector<std::future<int>> results;
-
+printf("ggg1\n");
 	ideal_graph_599 = input_graph;
 	// global_use_rank_prune = case_info.use_rank_prune;
 
 	auto end = std::chrono::high_resolution_clock::now();
-	case_info.time_initialization = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
+	case_info.time_initialization += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
 
 	// ----------------------------------------------- step 2: generate labels ---------------------------------------------------------------
 	begin = std::chrono::high_resolution_clock::now();
 
 	global_upper_k = case_info.upper_k == 0 ? std::numeric_limits<int>::max() : case_info.upper_k;
-
+	printf("ggg2\n");
 	Temp_L_vk_599.resize(num_of_threads);
 	dist_hop_599.resize(num_of_threads);
 	Q_handle_priorities_599.resize(num_of_threads);
 	Vh_599.resize(num_of_threads);
 	hop_constrained_node_handle handle_x;
-
+	printf("ggg3\n");
 	for (int i = 0; i < num_of_threads; i++) {
 		Temp_L_vk_599[i].resize(V);
 		dist_hop_599[i].resize(V, {std::numeric_limits<int>::max(), 0});
@@ -676,34 +678,37 @@ void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, 
 		Vh_599[i].resize(global_upper_k + 2);
 		Qid_599.push(i);
 	}
+	printf("ggg4\n");
 	if (case_info.use_2023WWW_generation) {
-		for (int v_k = 0; v_k < N; v_k++) {
-			int y = v_k;
+		for (int v_k = 0; v_k < N; ++ v_k) {
 			int x = nid_vec[v_k];
 			results.emplace_back(pool.enqueue([x]{_2023WWW_thread_function(x); return 1;}));
 		}
 	} else {
-		int last_check_vID = N - 1;
-		for (int v_k = 0; v_k <= last_check_vID; v_k++) {
-			int y = v_k;
+		for (int v_k = 0; v_k < N; ++ v_k) {
 			int x = nid_vec[v_k];
 			results.emplace_back(pool.enqueue([x]{HSDL_thread_function(x); return 1;}));
 		}
 	}
-
+	printf("ggg5\n");
 	for (auto &&result : results)
 		result.get();
-
 	end = std::chrono::high_resolution_clock::now();
 	case_info.time_generate_labels += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9; // s
+
+	begin = std::chrono::high_resolution_clock::now();
+	hop_constrained_two_hop_label x;
 	for (int v_k = 0; v_k < V; ++ v_k) {
 		for (int j = 0; j < L_temp_599[v_k].size(); ++ j) {
-			hop_constrained_two_hop_label x = L_temp_599[v_k][j];
+			x = L_temp_599[v_k][j];
 			L[v_k].push_back({x.hub_vertex, x.hop, x.distance});
 		}
 	}
+	end = std::chrono::high_resolution_clock::now();
+	case_info.time_traverse += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9; // s
 
-	case_info.time_total = case_info.time_initialization + case_info.time_generate_labels + case_info.time_sortL + case_info.time_canonical_repair;
-
+	begin = std::chrono::high_resolution_clock::now();
 	hop_constrained_clear_global_values();
+	end = std::chrono::high_resolution_clock::now();
+	case_info.time_clear += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9; // s
 }

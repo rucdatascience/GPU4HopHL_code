@@ -34,8 +34,7 @@ public:
     /*running time records*/
 	double time_initialization = 0;
 	double time_generate_labels = 0;
-	double time_sortL = 0;
-	double time_canonical_repair = 0;
+    double time_traverse_labels = 0;
 	double time_total = 0;
     double label_size = 0;
 
@@ -43,22 +42,22 @@ public:
 
     // 构造函数
     // mmpool_size_block 就是一共要存的元素个数，/ nodes_per_block 即为需要的 block 数
-    __host__ void init (int V, int mmpool_size_block, int hop_cst, int thread_num) {
+    __host__ void init (int V, long long mmpool_size_block, int hop_cst, int G_max, int thread_num) {
         L_size = V;
 
         // 创建三个内存池
         // 第一个内存池用来存 label
         cudaMallocManaged(&mmpool_labels, sizeof(mmpool_v2<hub_type>));
         cudaDeviceSynchronize();
-        new (mmpool_labels) mmpool_v2<hub_type> (V, mmpool_size_block / nodes_per_block);
+        new (mmpool_labels) mmpool_v2<hub_type> (V, (long long)G_max * V * (hop_cst + 1) / nodes_per_block);
         // 第二个内存池用来存 T0
         cudaMallocManaged(&mmpool_T0, sizeof(mmpool_v2<T_item>));
         cudaDeviceSynchronize();
-        new (mmpool_T0) mmpool_v2<T_item> (V, mmpool_size_block / nodes_per_block);
+        new (mmpool_T0) mmpool_v2<T_item> (V, (long long)G_max * V * (hop_cst + 1) / nodes_per_block);
         // 第三个内存池用来存 T1
         cudaMallocManaged(&mmpool_T1, sizeof(mmpool_v2<T_item>));
         cudaDeviceSynchronize();
-        new (mmpool_T1) mmpool_v2<T_item> (V, mmpool_size_block / nodes_per_block);
+        new (mmpool_T1) mmpool_v2<T_item> (V, (long long)G_max * V * (hop_cst + 1) / nodes_per_block);
         cudaDeviceSynchronize();
         
         // 分配 L_cuda 内存池
@@ -84,15 +83,16 @@ public:
         cudaMallocManaged(&L_hash, thread_num * sizeof(cuda_hashTable_v2<weight_type>));
         cudaDeviceSynchronize();
         for (int i = 0; i < thread_num; i++) {
-            new (L_hash + i) cuda_hashTable_v2 <weight_type> (V * (hop_cst + 1));
+            new (L_hash + i) cuda_hashTable_v2 <weight_type> (G_max * (hop_cst + 1));
         }
         cudaDeviceSynchronize();
 
         // 准备 D_hashTable
         cudaMallocManaged(&D_hash, thread_num * sizeof(cuda_hashTable_v2<weight_type>));
         cudaDeviceSynchronize();
+        
         for (int i = 0; i < thread_num; i++) {
-            new (D_hash + i) cuda_hashTable_v2 <weight_type> (V);
+            new (D_hash + i) cuda_hashTable_v2 <int> (V);
         }
         cudaDeviceSynchronize();
 

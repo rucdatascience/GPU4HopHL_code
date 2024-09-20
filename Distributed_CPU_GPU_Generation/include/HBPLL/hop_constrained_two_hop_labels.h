@@ -2,6 +2,8 @@
 #define HOP_CONSTRAINED_TWO_HOP_LABELS_H
 #pragma once
 
+#include "definition/hub_def.h"
+#include <label/hop_constrained_two_hop_labels_v2.cuh>
 /* label format */
 class hop_constrained_two_hop_label
 {
@@ -64,6 +66,8 @@ public:
 	/*running time records*/
 	double time_initialization = 0;
 	double time_generate_labels = 0;
+	double time_traverse = 0;
+	double time_clear = 0;
 	double time_sortL = 0;
 	double time_canonical_repair = 0;
 	double time_total = 0;

@@ -60,13 +60,13 @@ __global__ void Push_Back_L (int V, int thread_num, int start_id, int end_id, in
     int st = tid * thread_num;
     for (int i = st; i < st + thread_num; ++i) {
         if (L_push_back[i] != 0) {
-            L_gpu[tid].push_back({nid[start_id + i - st], hop, L_push_back[i]});
+            L_gpu[tid].push_back({start_id + i - st, hop, L_push_back[i]});
             L_push_back[i] = 0;
         }
     }
 }
 
-// 通过 L_push_back 插入到 Lable 中
+// 通过 T_push_back 插入到 T 中
 __global__ void Push_Back_T (int V, int thread_num, int start_id, int end_id, int* T_push_back, cuda_vector_v2<T_item> *T, int *nid) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < 0 || tid >= thread_num) {
@@ -104,11 +104,12 @@ __global__ void clear_L (int V, cuda_vector_v2<hub_type> *L_gpu) {
 __global__ void init_T (int vertex_num, cuda_vector_v2<T_item> *T, cuda_vector_v2<hub_type> *L_gpu, int *nid) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < vertex_num) {
+        L_gpu[nid[tid]].push_back({tid, 0, 0});
+        L_gpu[nid[tid]].last_size = 1;
+    
         tid = nid[tid];
         // target_vertex, distance
         T[tid].push_back({tid, 0});
-        L_gpu[tid].push_back({tid, 0, 0});
-        L_gpu[tid].last_size = 1;
     }
 }
 
@@ -423,7 +424,8 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     int* out_edge = input_graph.out_edge;
     int* out_edge_weight = input_graph.out_edge_weight;
     int* out_pointer = input_graph.out_pointer;
-    int hop_cst = info->hop_cst, thread_num = info->thread_num;
+    int hop_cst = info->hop_cst;
+    int thread_num = info->thread_num;
     
     int vertex_num = nid_vec.size();
     
@@ -506,6 +508,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 
                 // push_back L
                 Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, L_push_back, info->L_cuda, nid);
+                // cudaDeviceSynchronize();
 
                 // push_back T
                 Push_Back_T <<< dimGrid_thread, dimBlock >>> (V, thread_num, start_id, end_id, T_push_back, info->T1, nid);
@@ -519,7 +522,8 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 
                 // push_back L
                 Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, L_push_back, info->L_cuda, nid);
-                
+                // cudaDeviceSynchronize();
+
                 // push_back T
                 Push_Back_T <<< dimGrid_thread, dimBlock >>> (V, thread_num, start_id, end_id, T_push_back, info->T0, nid);
                 cudaDeviceSynchronize();
@@ -547,34 +551,30 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsedTime, start, stop);
-    printf("Time generation: %.8f s\n", elapsedTime / 1000.0);
+    printf("Time generation: %.6fs\n", elapsedTime / 1000.0);
 
     info->time_generate_labels += elapsedTime / 1000.0;
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
     // printf("hub, parent, hop, dis:\n");
-    auto beforeTime = std::chrono::steady_clock::now();
-    int label_size = 0;
+    auto begin = std::chrono::high_resolution_clock::now();
+    long long label_size = 0;
     for (int v = 0; v < V; ++v) {
-        // L[v].clear();
-        // printf("vertex %d\n", v);
         for (int i = 0; i < info->L_cuda[v].blocks_num; ++i) {
             int block_id = info->L_cuda[v].block_idx_array[i];
             int block_siz = info->L_cuda[v].pool->get_block_size_host(block_id);
             for (int j = 0; j < block_siz; ++j) {
                 hub_type* x = info->L_cuda[v].pool->get_node_host(block_id, j);
-                // printf("{%d, %d, %d, %d}, ", x->hub_vertex, x->parent_vertex, x->hop, x->distance);
-                L[v].push_back({x->hub_vertex, x->hop, x->distance});
-                // info->L_cpu[v].push_back({x->hub_vertex, x->hop, x->distance});
+                L[v].push_back({nid_vec[x->hub_vertex], x->hop, x->distance});
                 label_size ++;
             }
         }
-        // printf("\n");
     }
-    auto afterTime = std::chrono::steady_clock::now();
-    printf("time traverse labels: %.6lf\n", std::chrono::duration<double>(afterTime - beforeTime).count());
-
+    auto end = std::chrono::high_resolution_clock::now();
+    printf("Time traverse: %6lf\n", std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9);
+    info->time_traverse_labels += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
+    
     info->label_size += label_size / (double)V;
     printf("average label size: %.6lf\n", label_size / (double)V);
     printf("Generation end!\n");

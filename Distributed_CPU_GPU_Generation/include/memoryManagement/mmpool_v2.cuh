@@ -113,7 +113,6 @@ template <typename T> __host__ __device__ bool mmpool_v2<T>::is_valid_block(cons
 
 // 添加节点到内存池
 template <typename T> __device__ bool mmpool_v2<T>::push_node(const int &block_idx, const T &node_data) {
-    // printf(" ");
     // 修改块元素内容
     
     blocks_pool[block_idx].data[-blocks_state[block_idx]] = node_data;
@@ -133,11 +132,8 @@ template <typename T> __device__ int mmpool_v2<T>::get_new_block(const int &bloc
                 printf("error with blocks num!\b");
             }
             blocks_state[last_empty_block_idx] = 0;
-            // __threadfence_system();
             blocks_state[block_idx] = last_empty_block_idx;
-            // __threadfence_system();
             atomicAdd(&last_empty_block_idx, 1);
-            // last_empty_block_idx ++;
             // __threadfence_system();
             atomicExch(&this->lock, 0); // 释放锁
             blocked = false;
