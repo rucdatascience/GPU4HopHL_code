@@ -7,7 +7,8 @@ using namespace std;
 bool compare_graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(const pair<int, int>& i, const pair<int, int>& j)
 {
 	/*< is nearly 10 times slower than >*/
-	return i.second >= j.second;  // < is from small to big; > is from big to small.  sort by the second item of pair<int, int>
+	if (i.second == j.second) return i.first < j.first;
+	return i.second > j.second;  // < is from small to big; > is from big to small.  sort by the second item of pair<int, int>
 }
 
 template <typename weight_type>

@@ -23,8 +23,8 @@ public:
     cuda_hashTable_v2<weight_type> *D_hash;
 
     int *D_vector;
-    int *L_push_back;
-    int *T_push_back;
+    int *LT_push_back;
+    // int *T_push_back;
 
     /*hop bounded*/
     int thread_num = 1;
@@ -40,6 +40,8 @@ public:
 
     size_t L_size;
 
+    hop_constrained_case_info_v2() {}
+
     // 构造函数
     // mmpool_size_block 就是一共要存的元素个数，/ nodes_per_block 即为需要的 block 数
     __host__ void init (int V, long long mmpool_size_block, int hop_cst, int G_max, int thread_num) {
@@ -49,11 +51,13 @@ public:
         // 第一个内存池用来存 label
         cudaMallocManaged(&mmpool_labels, sizeof(mmpool_v2<hub_type>));
         cudaDeviceSynchronize();
-        new (mmpool_labels) mmpool_v2<hub_type> (V, (long long)G_max * V * (hop_cst + 1) / nodes_per_block);
+        new (mmpool_labels) mmpool_v2<hub_type> (V, (long long)V * V * (hop_cst + 1) / nodes_per_block);
+        
         // 第二个内存池用来存 T0
         cudaMallocManaged(&mmpool_T0, sizeof(mmpool_v2<T_item>));
         cudaDeviceSynchronize();
         new (mmpool_T0) mmpool_v2<T_item> (V, (long long)G_max * V * (hop_cst + 1) / nodes_per_block);
+
         // 第三个内存池用来存 T1
         cudaMallocManaged(&mmpool_T1, sizeof(mmpool_v2<T_item>));
         cudaDeviceSynchronize();
@@ -99,11 +103,11 @@ public:
         // 准备 D_vector
         cudaMallocManaged(&D_vector, thread_num * V * sizeof(int));
         
-        // 准备 L_push_back_table
-        cudaMallocManaged(&L_push_back, thread_num * V * sizeof(int));
+        // 准备 LT_push_back_table
+        cudaMallocManaged(&LT_push_back, thread_num * V * sizeof(int));
 
         // 准备 T_push_back_table
-        cudaMallocManaged(&T_push_back, thread_num * V * sizeof(int));
+        // cudaMallocManaged(&T_push_back, thread_num * V * sizeof(int));
         
         // 同步，保证所有 malloc 完成。
         cudaDeviceSynchronize();

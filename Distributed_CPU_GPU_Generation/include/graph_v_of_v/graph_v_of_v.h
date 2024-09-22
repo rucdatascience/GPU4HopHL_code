@@ -330,79 +330,68 @@ ARRAY_graph<weight_type> graph_v_of_v<weight_type>::toARRAY() {
 	return ARRAY;
 }
 
+// void graph_v_of_v_example() {
 
+// 	/*
+// 	Create a complete graph of 10 nodes
+// 	Weight of edge (u,v) and (v,u) equal to min(u,v)+max(u,v)*0.1
+// 	*/
+// 	using std::cout;
+// 	int N = 10;
+// 	graph_v_of_v<float> g(N);
 
+// 	/*
+// 	Insert the edge
+// 	When the edge exists, it will update its weight.
+// 	*/
+// 	for (int i = 0; i < N; i++) {
+// 		for (int j = 0; j < i; j++) {
+// 			g.add_edge(i, j, j + 0.1 * i); // Insert the edge(i,j) with value j+0.1*i
+// 		}
+// 	}
 
+// 	/*
+// 	Get the number of edges, (u,v) and (v,u) only be counted once
+// 	The output is 45 (10*9/2)
+// 	*/
+// 	std::cout << g.edge_number() << '\n';
 
+// 	/*
+// 	Check if graph contain the edge (3,1) and get its value
+// 	The output is 1 1.3
+// 	*/
+// 	std::cout << g.contain_edge(3, 1) << " " << g.edge_weight(3, 1) << '\n';
 
+// 	/*
+// 	Remove half of the edge
+// 	If the edge does not exist, it will do nothing.
+// 	*/
+// 	for (int i = 0; i < N; i++) {
+// 		for (int j = 0; j < i; j++) {
+// 			if ((i + j) % 2 == 1)
+// 				g.remove_edge(i, j);
+// 		}
+// 	}
 
+// 	/*
+// 	Now the number of edges is 20
+// 	*/
+// 	std::cout << g.edge_number() << '\n';;
 
+// 	/*
+// 	Now the graph no longer contain the edge (3,0) and its value become std::numeric_limits<double>::max()
+// 	*/
+// 	std::cout << g.contain_edge(3, 0) << " " << g.edge_weight(3, 0) << '\n';
 
+// 	g.print(); // print the graph
 
+// 	g.remove_all_adjacent_edges(1);
 
+// 	g.txt_save("ss.txt");
+// 	g.txt_read("ss.txt");
 
-void graph_v_of_v_example() {
+// 	g.print(); // print the graph
 
-	/*
-	Create a complete graph of 10 nodes
-	Weight of edge (u,v) and (v,u) equal to min(u,v)+max(u,v)*0.1
-	*/
-	using std::cout;
-	int N = 10;
-	graph_v_of_v<float> g(N);
-
-	/*
-	Insert the edge
-	When the edge exists, it will update its weight.
-	*/
-	for (int i = 0; i < N; i++) {
-		for (int j = 0; j < i; j++) {
-			g.add_edge(i, j, j + 0.1 * i); // Insert the edge(i,j) with value j+0.1*i
-		}
-	}
-
-	/*
-	Get the number of edges, (u,v) and (v,u) only be counted once
-	The output is 45 (10*9/2)
-	*/
-	std::cout << g.edge_number() << '\n';
-
-	/*
-	Check if graph contain the edge (3,1) and get its value
-	The output is 1 1.3
-	*/
-	std::cout << g.contain_edge(3, 1) << " " << g.edge_weight(3, 1) << '\n';
-
-	/*
-	Remove half of the edge
-	If the edge does not exist, it will do nothing.
-	*/
-	for (int i = 0; i < N; i++) {
-		for (int j = 0; j < i; j++) {
-			if ((i + j) % 2 == 1)
-				g.remove_edge(i, j);
-		}
-	}
-
-	/*
-	Now the number of edges is 20
-	*/
-	std::cout << g.edge_number() << '\n';;
-
-	/*
-	Now the graph no longer contain the edge (3,0) and its value become std::numeric_limits<double>::max()
-	*/
-	std::cout << g.contain_edge(3, 0) << " " << g.edge_weight(3, 0) << '\n';
-
-	g.print(); // print the graph
-
-	g.remove_all_adjacent_edges(1);
-
-	g.txt_save("ss.txt");
-	g.txt_read("ss.txt");
-
-	g.print(); // print the graph
-
-	std::cout << "g.size()= " << g.size() << '\n';
-	std::cout << "g[2].size()= " << g[2].size() << '\n';
-}
+// 	std::cout << "g.size()= " << g.size() << '\n';
+// 	std::cout << "g[2].size()= " << g[2].size() << '\n';
+// }

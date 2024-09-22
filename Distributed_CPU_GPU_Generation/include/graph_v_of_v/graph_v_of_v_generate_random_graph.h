@@ -15,7 +15,7 @@ graph_v_of_v<weight_type> graph_v_of_v_generate_random_graph(long long int V, lo
 
 	/*time complexity: O(|V|)*/
 	graph_v_of_v<weight_type> random_graph(V); // generate vertices
-
+	
 	/*add edges to random_graph*/
 	long long int max_E = V * (V - 1) / 2; // must use long long int for large V
 	if (E == max_E) { // complete graphs
@@ -40,7 +40,6 @@ graph_v_of_v<weight_type> graph_v_of_v_generate_random_graph(long long int V, lo
 		for (int i = 0; i < V; i++) {
 			not_full_vertices.push_back(i);
 		}
-
 		/*time complexity: O(|V||E|)*/
 		int edge_num = 0;
 		while (edge_num < E) {
@@ -71,16 +70,11 @@ graph_v_of_v<weight_type> graph_v_of_v_generate_random_graph(long long int V, lo
 						unchecked.erase(unchecked.begin() + x);
 					}
 				}
-
-
-
-
 			}
 			else { // this is a vertex with a full degree
 				not_full_vertices.erase(not_full_vertices.begin() + RAND);
 			}
 		}
-
 
 	}
 

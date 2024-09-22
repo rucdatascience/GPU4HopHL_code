@@ -17,6 +17,8 @@
 
 #include <HBPLL/hop_constrained_two_hop_labels_generation.h>
 
+#include <vgroup/CDLP_group.cuh>
+
 vector<vector<hub_type> > L;
 vector<vector<hub_type> > L_gpu, L_cpu;
 
@@ -124,7 +126,7 @@ void graph_v_of_v_to_LDBC (LDBC<weight_type> &graph, graph_v_of_v<int> &input_gr
         int v_adj_size = input_graph[i].size();
         for (int j = 0; j < v_adj_size; j++) {
             int adj_v = input_graph[i][j].first;
-            int ec = (int)input_graph[i][j].second;
+            int ec = input_graph[i][j].second;
             graph.add_edge(i, adj_v, ec);
         }
     }
@@ -211,14 +213,14 @@ int main () {
     
     // 测试次数参数
     int iteration_graph_times = 1;
-    int iteration_source_times = 100, iteration_terminal_times = 5000;
+    int iteration_source_times = 1000, iteration_terminal_times = 1000;
 
     // 样例图参数
-    int V = 50000, E = 250000, Distributed_Graph_Num = 100;
-    int G_max = V / Distributed_Graph_Num + 1;
+    int V = 10000, E = 50000, Distributed_Graph_Num = 10;
+    int G_max = 1000;
     
     int hop_cst = 5, thread_num = 1000;
-    double ec_min = 1, ec_max = 10;
+    double ec_min = 1, ec_max = 100;
     double time_generate_labels_total = 0.0;
 
     // cpu info
@@ -233,25 +235,23 @@ int main () {
     info_gpu = new hop_constrained_case_info_v2();
     info_gpu->init(V, (long long)V * V * (hop_cst + 1), hop_cst, G_max, thread_num);
     printf("init case_info success\n");
+    
     info_gpu->hop_cst = hop_cst;
     info_gpu->thread_num = thread_num;
     info_gpu->use_d_optimization = 1;
-
+    
     // 分布式图
-    vector<vector<int> > Distributed_Graph;
-    Distributed_Graph.resize(Distributed_Graph_Num);
+    graph_pool.graph_group.resize(Distributed_Graph_Num);
     int Nodes_Per_Graph = (V - 1) / Distributed_Graph_Num + 1;
-    for (int i = 0; i < Distributed_Graph_Num; ++i) {
+    for (int i = 0; i < Distributed_Graph_Num; ++ i) {
         for (int j = Nodes_Per_Graph * i; j < Nodes_Per_Graph * (i + 1); ++j) {
             if (j >= V) break;
-            Distributed_Graph[i].push_back(j);
+            graph_pool.graph_group[i].push_back(j);
         }
     }
-    graph_pool.graph_group.resize(Distributed_Graph_Num);
-    graph_pool.graph_group = Distributed_Graph;
-
+    
     /* test parameters */
-    int generate_new_graph = 0;
+    int generate_new_graph = 1;
     int print_details = 1;
     int check_correctness_gpu = 1;
     int check_correctness_cpu = 1;
@@ -265,98 +265,107 @@ int main () {
     L.resize(V);
     for (int i = 0; i < V; ++i) L.clear();
 
-    /* iteration */
-    for (int i = 0; i < iteration_graph_times; i++) {
-
-        // 生成图
-        if (generate_new_graph) {
-            instance_graph = graph_v_of_v_generate_random_graph<int>(V, E, ec_min, ec_max, 1, boost_random_time_seed);
-            instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
-            instance_graph.txt_save("../data/simple_iterative_tests.txt");
-        }else{
-            instance_graph.txt_read("../data/simple_iterative_tests.txt");
-        }
-
-        // 通过 instance_graph 生成 CSR_graph
-        LDBC<weight_type> graph(V);
-        graph_v_of_v_to_LDBC(graph, instance_graph);
-        csr_graph = toCSR(graph);
-
-        // distributed cpu gpu generation
-        // auto begin = std::chrono::high_resolution_clock::now();
-        // std::thread thread_cpu (cosumer_cpu);
-        // std::thread thread_gpu (cosumer_gpu);
-        // thread_gpu.join();
-        // thread_cpu.join();
-        // auto end = std::chrono::high_resolution_clock::now();
-        
-        // for (int i = 0; i < V; ++i){
-        //     for (int j = 0; j < L_gpu[i].size(); ++j) {
-        //         hub_type x = L_gpu[i][j];
-        //         L[i].push_back({x.hub_vertex, x.hop, x.distance});
-        //     }
-        //     for (int j = 0; j < L_cpu[i].size(); ++j) {
-        //         hub_type x = L_cpu[i][j];
-        //         L[i].push_back({x.hub_vertex, x.hop, x.distance});
-        //     }
-        // }
-        // time_generate_labels_total += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-        // printf("generation complete !\n");
-        
-        // for (int v_k = 0; v_k < V; ++ v_k) {
-        //     sort(L[v_k].begin(), L[v_k].end(), compare_hop_constrained_two_hop_label_v2);
-        // }
-
-        // if (check_correctness_cpu) {
-        //     // printf("check distributed cpu gpu !\n");
-        //     GPU_HSDL_checker(info_gpu, L, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
-        // }
-
-        // label generation GPU
-        // for (int j = 0; j < Distributed_Graph_Num; ++j) {
-        //     label_gen(csr_graph, info_gpu, L_gpu, graph_pool.graph_group[j]);
-        // }
-        // for (int v_k = 0; v_k < V; ++ v_k) {
-        //     sort(L_gpu[v_k].begin(), L_gpu[v_k].end(), compare_hop_constrained_two_hop_label_v2);
-        // }
-        // // 检验 GPU 正确性
-        // if (check_correctness_gpu) {
-        //     printf("check gpu !\n");
-        //     GPU_HSDL_checker(info_gpu, L_gpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
-        // }
-
-        // label generation CPU
-        for (int j = 0; j < Distributed_Graph_Num; ++j) {
-            hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L_cpu, graph_pool.graph_group[j]);
-        }
-        for (int v_k = 0; v_k < V; ++ v_k) {
-            sort(L_cpu[v_k].begin(), L_cpu[v_k].end(), compare_hop_constrained_two_hop_label_v2);
-        }
-        // hop_constrained_two_hop_labels_generation(instance_graph, info_cpu);
-        // 检验 CPU 正确性
-        if (check_correctness_cpu) {
-            printf("check cpu !\n");
-            GPU_HSDL_checker(info_gpu, L_cpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
-        }
-
-        // 输出标签
-        if (print_L) {
-
-        }
-
+    // 生成图
+    if (generate_new_graph) {
+        instance_graph = graph_v_of_v_generate_random_graph<int> (V, E, ec_min, ec_max, 1, boost_random_time_seed);
+        instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
+        instance_graph.txt_save("../data/simple_iterative_tests.txt");
+    }else{
+        instance_graph.txt_read("../data/simple_iterative_tests.txt");
     }
     
-    int label_size_gpu = 0;
+    // init cpu_generation
+    // hop_constrained_two_hop_labels_generation_init(instance_graph, info_cpu);
+
+    // generate_Group_CDLP(instance_graph, graph_pool.graph_group, G_max);
+    Distributed_Graph_Num = graph_pool.graph_group.size();
+    for (int j = 0; j < Distributed_Graph_Num; ++ j) {
+        printf("graph size: %d !\n", graph_pool.graph_group[j].size());
+        // for (int k = 0; k < graph_pool.graph_group[j].size(); ++k) {
+        //     printf("%d ", graph_pool.graph_group[j][k]);
+        // }
+        // printf("\n\n");
+    }
+    // for (int j = 0; j < Distributed_Graph_Num; ++ j) {
+    //     for (int k = 0; k < graph_pool.graph_group[j].size(); ++k) {
+    //         printf("%d ", graph_pool.graph_group[j][k]);
+    //     }
+    //     printf("\n\n");
+    // }
+    // 通过 instance_graph 生成 CSR_graph
+    LDBC<weight_type> graph(V);
+    graph_v_of_v_to_LDBC(graph, instance_graph);
+    csr_graph = toCSR(graph);
+    
+    // distributed cpu gpu generation
+    // auto begin = std::chrono::high_resolution_clock::now();
+    // std::thread thread_cpu (cosumer_cpu);
+    // std::thread thread_gpu (cosumer_gpu);
+    // thread_gpu.join();
+    // thread_cpu.join();
+    // auto end = std::chrono::high_resolution_clock::now();
+    
+    // for (int i = 0; i < V; ++i){
+    //     for (int j = 0; j < L_gpu[i].size(); ++j) {
+    //         hub_type x = L_gpu[i][j];
+    //         L[i].push_back({x.hub_vertex, x.hop, x.distance});
+    //     }
+    //     for (int j = 0; j < L_cpu[i].size(); ++j) {
+    //         hub_type x = L_cpu[i][j];
+    //         L[i].push_back({x.hub_vertex, x.hop, x.distance});
+    //     }
+    // }
+    // time_generate_labels_total += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
+    // printf("generation complete !\n");
+    
+    // for (int v_k = 0; v_k < V; ++ v_k) {
+    //     sort(L[v_k].begin(), L[v_k].end(), compare_hop_constrained_two_hop_label_v2);
+    // }
+
+    // if (check_correctness_cpu) {
+    //     // printf("check distributed cpu gpu !\n");
+    //     GPU_HSDL_checker(info_gpu, L, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
+    // }
+
+    // label generation GPU
+    for (int j = 0; j < Distributed_Graph_Num; ++j) {
+        label_gen(csr_graph, info_gpu, L_gpu, graph_pool.graph_group[j]);
+    }
+    for (int v_k = 0; v_k < V; ++ v_k) {
+        sort(L_gpu[v_k].begin(), L_gpu[v_k].end(), compare_hop_constrained_two_hop_label_v2);
+    }
+    // 检验 GPU 正确性
+    if (check_correctness_gpu) {
+        printf("check gpu !\n");
+        GPU_HSDL_checker(info_gpu, L_gpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
+    }
+
+    hop_constrained_two_hop_labels_generation(instance_graph, info_cpu);
+    // // label generation CPU
+    // for (int j = 0; j < Distributed_Graph_Num; ++j) {
+    //     printf("round: %d !\n", j);
+    //     hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L_cpu, graph_pool.graph_group[j]);
+    // }
+    // for (int v_k = 0; v_k < V; ++ v_k) {
+    //     sort(L_cpu[v_k].begin(), L_cpu[v_k].end(), compare_hop_constrained_two_hop_label_v2);
+    // }
+    // // 检验 CPU 正确性
+    // if (check_correctness_cpu) {
+    //     printf("check cpu !\n");
+    //     GPU_HSDL_checker(info_gpu, L_cpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
+    // }
+    
+    double label_size_gpu = 0;
     for (int i = 0; i < V; ++i) {
         label_size_gpu += L_gpu[i].size();
     }
     
-    int label_size_cpu = 0;
+    double label_size_cpu = info_cpu.label_size * V;
     for (int i = 0; i < V; ++i) {
         label_size_cpu += L_cpu[i].size();
     }
 
-    int label_size_total = 0;
+    long long label_size_total = 0;
     for (int i = 0; i < V; ++i) {
         label_size_total += L[i].size();
     }
