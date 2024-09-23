@@ -52,19 +52,19 @@ public:
         // 第一个内存池用来存 label
         cudaMallocManaged(&mmpool_labels, sizeof(mmpool_v2<hub_type>));
         cudaDeviceSynchronize();
-        new (mmpool_labels) mmpool_v2<hub_type> (V, (long long) G_max * V * (hop_cst + 1) / 2 / nodes_per_block);
+        new (mmpool_labels) mmpool_v2<hub_type> (V, (long long) G_max * V * (hop_cst) / 3 / nodes_per_block);
         printf("init 1!\n");
 
         // 第二个内存池用来存 T0
         cudaMallocManaged(&mmpool_T0, sizeof(mmpool_v2<T_item>));
         cudaDeviceSynchronize();
-        new (mmpool_T0) mmpool_v2<T_item> (V, (long long) G_max * V * (hop_cst + 1) / 2 / nodes_per_block);
+        new (mmpool_T0) mmpool_v2<T_item> (G_max, (long long) G_max * V / 2 / nodes_per_block);
         printf("init 2!\n");
 
         // 第三个内存池用来存 T1
         cudaMallocManaged(&mmpool_T1, sizeof(mmpool_v2<T_item>));
         cudaDeviceSynchronize();
-        new (mmpool_T1) mmpool_v2<T_item> (V, (long long) G_max * V * (hop_cst + 1) / 2 / nodes_per_block);
+        new (mmpool_T1) mmpool_v2<T_item> (G_max, (long long) G_max * V / 2 / nodes_per_block);
         cudaDeviceSynchronize();
         printf("init 3!\n");
 
@@ -72,23 +72,23 @@ public:
         cudaMallocManaged(&L_cuda, (long long) V * sizeof(cuda_vector_v2<hub_type>)); // 分配 n 个cuda_vector指针
         cudaDeviceSynchronize();
         for (int i = 0; i < V; i++) {
-            new (L_cuda + i) cuda_vector_v2<hub_type> (mmpool_labels, i, V / nodes_per_block + 1); // 调用构造函数
+            new (L_cuda + i) cuda_vector_v2<hub_type> (mmpool_labels, i, G_max * hop_cst / nodes_per_block + 1); // 调用构造函数
         }
         printf("init 4!\n");
 
         // 分配 T0 内存池
-        cudaMallocManaged(&T0, (long long) V * sizeof(cuda_vector_v2<T_item>)); // 分配 n 个cuda_vector指针
+        cudaMallocManaged(&T0, (long long) G_max * sizeof(cuda_vector_v2<T_item>)); // 分配 n 个cuda_vector指针
         cudaDeviceSynchronize();
-        for (int i = 0; i < V; i++) {
-            new (T0 + i) cuda_vector_v2<T_item> (mmpool_T0, i, V / nodes_per_block + 1); // 调用构造函数
+        for (int i = 0; i < G_max; i++) {
+            new (T0 + i) cuda_vector_v2<T_item> (mmpool_T0, i, V / 2 / nodes_per_block + 1); // 调用构造函数
         }
         printf("init 5!\n");
 
         // 分配 T1 内存池
-        cudaMallocManaged(&T1, (long long) V * sizeof(cuda_vector_v2<T_item>)); // 分配 n 个cuda_vector指针
+        cudaMallocManaged(&T1, (long long) G_max * sizeof(cuda_vector_v2<T_item>)); // 分配 n 个cuda_vector指针
         cudaDeviceSynchronize();
-        for (int i = 0; i < V; i++) {
-            new (T1 + i) cuda_vector_v2<T_item> (mmpool_T1, i, V / nodes_per_block + 1); // 调用构造函数
+        for (int i = 0; i < G_max; i++) {
+            new (T1 + i) cuda_vector_v2<T_item> (mmpool_T1, i, V / 2 / nodes_per_block + 1); // 调用构造函数
         }
         printf("init 6!\n");
 
@@ -109,7 +109,7 @@ public:
         }
         cudaDeviceSynchronize();
         printf("init 8!\n");
-        
+
         // 准备 D_vector
         cudaMallocManaged(&D_vector, (long long) thread_num * V * sizeof(int));
 

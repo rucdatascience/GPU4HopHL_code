@@ -78,7 +78,7 @@ __global__ void Push_Back_L (int V, int thread_num, int start_id, int end_id, in
             // L_push_back[i] = 0;
         }
     }
-    // L_gpu[tid].last_size = L_gpu[tid].current_size;
+    L_gpu[tid].last_size = L_gpu[tid].current_size;
 }
 
 // 通过 T_push_back 插入到 T 中
@@ -100,7 +100,7 @@ __global__ void Push_Back_T (int V, int thread_num, int start_id, int end_id, in
     int ed = thread_num * V;
     for (int i = tid, j = 0; i < ed; i += thread_num, ++j) {
         if (LT_push_back[i] != 0) {
-            T[node_id].push_back({j, LT_push_back[i]});
+            T[start_id + tid].push_back({j, LT_push_back[i]});
             LT_push_back[i] = 0;
         }
     }
@@ -131,9 +131,9 @@ __global__ void init_T (int vertex_num, cuda_vector_v2<T_item> *T, cuda_vector_v
         L_gpu[nid[tid]].push_back({tid, 0, 0});
         L_gpu[nid[tid]].last_size = 1;
     
-        tid = nid[tid];
+        // tid = nid[tid];
         // target_vertex, distance
-        T[tid].push_back({tid, 0});
+        T[tid].push_back({nid[tid], 0});
     }
 }
 
@@ -142,7 +142,7 @@ __global__ void clear_T (int V, cuda_vector_v2<T_item> *T, cuda_vector_v2<hub_ty
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < V) {
         T[tid].init(V, tid);
-        L_gpu[tid].last_size = L_gpu[tid].current_size;
+        // L_gpu[tid].last_size = L_gpu[tid].current_size;
     }
 }
 
@@ -358,7 +358,7 @@ cuda_vector_v2<T_item> *T0, int start_id, int end_id, int* LT_push_back, int *d,
     int node_id = nid[start_id + tid];
     
     // node_id 的 T 队列
-    cuda_vector_v2<T_item> *t0 = (T0 + node_id);
+    cuda_vector_v2<T_item> *t0 = (T0 + start_id + tid);
 
     // node_id 的 label
     cuda_vector_v2<hub_type> *L = (L_gpu + node_id);
@@ -484,8 +484,8 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     cudaDeviceSynchronize();
 
     clear_L <<< dimGrid_V, dimBlock >>> (V, info->L_cuda);
-    clear_T <<< dimGrid_V, dimBlock >>> (V, info->T0);
-    clear_T <<< dimGrid_V, dimBlock >>> (V, info->T1);
+    clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T0);
+    clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T1);
     cudaDeviceSynchronize();
 
     init_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T0, info->L_cuda, nid);
@@ -560,10 +560,10 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
         }
         if (iter % 2 == 1) {
             // 清洗 T 数组
-            clear_T <<< dimGrid_V, dimBlock >>> (V, info->T0, info->L_cuda);
+            clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T0);
         }else{
             // 清洗 T 数组
-            clear_T <<< dimGrid_V, dimBlock >>> (V, info->T1, info->L_cuda);
+            clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T1);
         }
         cudaDeviceSynchronize();
         // cudaEventRecord(stop, 0);

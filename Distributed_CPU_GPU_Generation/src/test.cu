@@ -31,6 +31,17 @@ Graph_pool<int> graph_pool;
 
 boost::random::mt19937 boost_random_time_seed{static_cast<std::uint32_t>(std::time(0))}; // 随机种子 
 
+struct Executive_Core {
+    int id;
+    double time_generation;
+    int core_type; // 0: cpu, 1: gpu
+    Executive_Core (int x, double y, int z) : id(x), time_generation(y), core_type(z) {}
+};
+inline bool operator < (Executive_Core a, Executive_Core b) {
+    if (a.time_generation == b.time_generation) return a.id < b.id;
+    return a.time_generation < b.time_generation;
+}
+
 int hop_constrained_extract_distance(vector<vector<hub_type>> &L, int source, int terminal, int hop_cst) {
 	/*return std::numeric_limits<int>::max() is not connected*/
 	if (hop_cst < 0) {
@@ -195,7 +206,7 @@ int main () {
     
     // 测试次数参数
     int iteration_graph_times = 1;
-    int iteration_source_times = 1000, iteration_terminal_times = 1000;
+    int iteration_source_times = 3000, iteration_terminal_times = 3000;
 
     // 样例图参数
     int V = 10000, E = 50000, Distributed_Graph_Num = 10;
@@ -256,7 +267,8 @@ int main () {
     }else{
         instance_graph.txt_read("../data/simple_iterative_tests.txt");
     }
-    
+    printf("generation graph successful!\n");
+
     // init cpu_generation
     // hop_constrained_two_hop_labels_generation_init(instance_graph, info_cpu);
 
@@ -300,30 +312,28 @@ int main () {
     // }
     // time_generate_labels_total += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
     // printf("generation complete !\n");
-    
     // for (int v_k = 0; v_k < V; ++ v_k) {
     //     sort(L[v_k].begin(), L[v_k].end(), compare_hop_constrained_two_hop_label_v2);
     // }
-
     // if (check_correctness_cpu) {
     //     // printf("check distributed cpu gpu !\n");
     //     GPU_HSDL_checker(info_gpu, L, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
     // }
 
     // label generation GPU
-    for (int j = 0; j < Distributed_Graph_Num; ++j) {
-        label_gen(csr_graph, info_gpu, L_gpu, graph_pool.graph_group[j]);
-    }
-    for (int v_k = 0; v_k < V; ++ v_k) {
-        sort(L_gpu[v_k].begin(), L_gpu[v_k].end(), compare_hop_constrained_two_hop_label_v2);
-    }
-    // 检验 GPU 正确性
-    if (check_correctness_gpu) {
-        printf("check gpu !\n");
-        GPU_HSDL_checker(info_gpu, L_gpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
-    }
-
-    hop_constrained_two_hop_labels_generation(instance_graph, info_cpu);
+    // for (int j = 0; j < Distributed_Graph_Num; ++j) {
+    //     label_gen(csr_graph, info_gpu, L_gpu, graph_pool.graph_group[j]);
+    // }
+    // for (int v_k = 0; v_k < V; ++ v_k) {
+    //     sort(L_gpu[v_k].begin(), L_gpu[v_k].end(), compare_hop_constrained_two_hop_label_v2);
+    // }
+    // // 检验 GPU 正确性
+    // if (check_correctness_gpu) {
+    //     printf("check gpu !\n");
+    //     GPU_HSDL_checker(info_gpu, L_gpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
+    // }
+    // hop_constrained_two_hop_labels_generation(instance_graph, info_cpu);
+    
     // // label generation CPU
     // for (int j = 0; j < Distributed_Graph_Num; ++j) {
     //     printf("round: %d !\n", j);
@@ -338,6 +348,38 @@ int main () {
     //     GPU_HSDL_checker(info_gpu, L_cpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
     // }
     
+    priority_queue<Executive_Core> pq;
+    for (int i = 0; i < CPU_Num; ++i) {
+        pq.push(Executive_Core(i, 0, 0)); // id, time, cpu/gpu
+    }
+    for (int i = 0; i < GPU_Num; ++i) {
+        pq.push(Executive_Core(CPU_Num + i, 0, 1)); // id, time, cpu/gpu
+    }
+    for (int i = 0; i < Distributed_Graph_Num; ++i) {
+        
+        Executive_Core x = pq.top();
+        pq.pop();
+        
+        auto begin = std::chrono::high_resolution_clock::now();
+        if (x.core_type == 0) { // core type is cpu
+            hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L, graph_pool.graph_group[i]);
+        }else{
+            label_gen(csr_graph, info_gpu, L, graph_pool.graph_group[i]);
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
+        
+        x.time_generation += duration;
+        pq.push(x);
+
+    }
+
+    while (!pq.empty()) {
+        Executive_Core x = pq.top();
+        pq.pop();
+        time_generate_labels_total = max(time_generate_labels_total, x.time_generation);
+    }
+
     double label_size_gpu = 0;
     for (int i = 0; i < V; ++i) {
         label_size_gpu += L_gpu[i].size();
