@@ -656,7 +656,7 @@ void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, 
 	
 	auto end = std::chrono::high_resolution_clock::now();
 	case_info.time_initialization += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-
+	
 	// ----------------------------------------------- step 2: generate labels ---------------------------------------------------------------
 	begin = std::chrono::high_resolution_clock::now();
 
@@ -685,7 +685,7 @@ void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, 
 	for (auto &&result : results) {
 		result.get();
 	}
-
+	
 	end = std::chrono::high_resolution_clock::now();
 	case_info.time_generate_labels += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9; // s
 
@@ -698,6 +698,7 @@ void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, 
 		}
 		L_temp_599[v_k].clear();
 	}
+	
 	end = std::chrono::high_resolution_clock::now();
 	case_info.time_traverse += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9; // s
 

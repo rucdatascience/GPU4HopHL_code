@@ -38,8 +38,8 @@ struct Executive_Core {
     Executive_Core (int x, double y, int z) : id(x), time_generation(y), core_type(z) {}
 };
 inline bool operator < (Executive_Core a, Executive_Core b) {
-    if (a.time_generation == b.time_generation) return a.id < b.id;
-    return a.time_generation < b.time_generation;
+    if (a.time_generation == b.time_generation) return a.id > b.id;
+    return a.time_generation > b.time_generation;
 }
 
 int hop_constrained_extract_distance(vector<vector<hub_type>> &L, int source, int terminal, int hop_cst) {
@@ -159,8 +159,8 @@ void query_mindis_with_hub_host (int V, int x, int y, int hop_cst,
     }
 }
 
-void GPU_HSDL_checker (hop_constrained_case_info_v2 *info,  vector<vector<hub_type> >&LL, graph_v_of_v<int> &instance_graph,
-                            int iteration_source_times, int iteration_terminal_times, int hop_bounded) {
+void GPU_HSDL_checker (vector<vector<hub_type> >&LL, graph_v_of_v<int> &instance_graph,
+                        int iteration_source_times, int iteration_terminal_times, int hop_bounded) {
 
     boost::random::uniform_int_distribution<> vertex_range{ static_cast<int>(0), static_cast<int>(instance_graph.size() - 1) };
     boost::random::uniform_int_distribution<> hop_range{ static_cast<int>(1), static_cast<int>(hop_bounded) };
@@ -206,7 +206,7 @@ int main () {
     
     // 测试次数参数
     int iteration_graph_times = 1;
-    int iteration_source_times = 3000, iteration_terminal_times = 3000;
+    int iteration_source_times = 2000, iteration_terminal_times = 2000;
 
     // 样例图参数
     int V = 10000, E = 50000, Distributed_Graph_Num = 10;
@@ -249,6 +249,7 @@ int main () {
     int print_details = 1;
     int check_correctness_gpu = 1;
     int check_correctness_cpu = 1;
+    int check_correctness = 1;
     int print_L = 0;
     
     // init label
@@ -270,7 +271,7 @@ int main () {
     printf("generation graph successful!\n");
 
     // init cpu_generation
-    // hop_constrained_two_hop_labels_generation_init(instance_graph, info_cpu);
+    hop_constrained_two_hop_labels_generation_init(instance_graph, info_cpu);
 
     // generate_Group_CDLP(instance_graph, graph_pool.graph_group, G_max);
     Distributed_Graph_Num = graph_pool.graph_group.size();
@@ -345,10 +346,11 @@ int main () {
     // // 检验 CPU 正确性
     // if (check_correctness_cpu) {
     //     printf("check cpu !\n");
-    //     GPU_HSDL_checker(info_gpu, L_cpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
+    //     GPU_HSDL_checker(L_cpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
     // }
     
     priority_queue<Executive_Core> pq;
+    while (!pq.empty()) pq.pop();
     for (int i = 0; i < CPU_Num; ++i) {
         pq.push(Executive_Core(i, 0, 0)); // id, time, cpu/gpu
     }
@@ -359,7 +361,6 @@ int main () {
         
         Executive_Core x = pq.top();
         pq.pop();
-        
         auto begin = std::chrono::high_resolution_clock::now();
         if (x.core_type == 0) { // core type is cpu
             hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L, graph_pool.graph_group[i]);
@@ -374,6 +375,14 @@ int main () {
 
     }
 
+    for (int v_k = 0; v_k < V; ++ v_k) {
+        sort(L[v_k].begin(), L[v_k].end(), compare_hop_constrained_two_hop_label_v2);
+    }
+
+    if (check_correctness) {
+        printf("check union !\n");
+        GPU_HSDL_checker(L, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
+    }
     while (!pq.empty()) {
         Executive_Core x = pq.top();
         pq.pop();
