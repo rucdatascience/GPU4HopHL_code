@@ -55,7 +55,7 @@ template <typename T> __host__ cuda_vector_v2<T>::cuda_vector_v2(mmpool_v2<T> *p
     this->lock = 0;
 
     // copy to cuda
-    cudaMallocManaged(&this->block_idx_array, sizeof(int) * capacity);
+    cudaMallocManaged(&this->block_idx_array, (long long) sizeof(int) * capacity);
     this->block_idx_array[this->blocks_num++] = idx;
 };
 

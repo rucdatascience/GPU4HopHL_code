@@ -25,7 +25,7 @@ __device__ int query_dis_by_hash_table (cuda_vector_v2<hub_type> *L_gpu);
 
 __global__ void clear_T (int V, cuda_vector_v2<T_item> *T, cuda_vector_v2<T_item> *D);
 
-__global__ void query_parallel (int sv, int st, int ed, int sz, cuda_hashTable_v2<weight_type> *das, int *d,
-cuda_hashTable_v2<weight_type> *has, cuda_vector_v2<hub_type> *L_gpu, cuda_vector_v2<T_item> *t1, int hop_now, int hop_cst);
+__global__ void query_parallel (int sv, int st, int sz, cuda_hashTable_v2<weight_type> *das, int *d, cuda_hashTable_v2<weight_type> *has,
+cuda_vector_v2<hub_type> *L_gpu, int thread_num, int tidd, int* LT_push_back, int hop_now, int hop_cst);
 
 #endif

@@ -191,24 +191,6 @@ void GPU_HSDL_checker (hop_constrained_case_info_v2 *info,  vector<vector<hub_ty
     return;
 }
 
-void cosumer_gpu () {
-    int x;
-    while ((x = graph_pool.get_next_graph()) != -1) {
-        printf("gpu x: %d\n", x);
-        label_gen(csr_graph, info_gpu, L_gpu, graph_pool.graph_group[x]);
-    }
-    printf("generation gpu complete !\n");
-}
-
-void cosumer_cpu () {
-    int x;
-    while ((x = graph_pool.get_next_graph()) != -1) {
-        printf("cpu x: %d\n", x);
-        hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L_cpu, graph_pool.graph_group[x]);
-    }
-    printf("generation cpu complete !\n");
-}
-
 int main () {
     
     // 测试次数参数
@@ -217,9 +199,10 @@ int main () {
 
     // 样例图参数
     int V = 10000, E = 50000, Distributed_Graph_Num = 10;
-    int G_max = 1000;
-    
-    int hop_cst = 5, thread_num = 1000;
+    int G_max = V / Distributed_Graph_Num + 1;
+    int CPU_Num = 1, GPU_Num = 4;
+
+    int hop_cst = 4, thread_num = 1000;
     double ec_min = 1, ec_max = 100;
     double time_generate_labels_total = 0.0;
 
@@ -230,16 +213,16 @@ int main () {
 	info_cpu.use_canonical_repair = 1;
 	info_cpu.max_run_time_seconds = 100;
     info_cpu.thread_num = 100;
-    
+    printf("init cpu_info successful!\n");
+
     // gpu info
     info_gpu = new hop_constrained_case_info_v2();
     info_gpu->init(V, (long long)V * V * (hop_cst + 1), hop_cst, G_max, thread_num);
-    printf("init case_info success\n");
-    
     info_gpu->hop_cst = hop_cst;
     info_gpu->thread_num = thread_num;
     info_gpu->use_d_optimization = 1;
-    
+    printf("init gpu_info successful!\n");
+
     // 分布式图
     graph_pool.graph_group.resize(Distributed_Graph_Num);
     int Nodes_Per_Graph = (V - 1) / Distributed_Graph_Num + 1;

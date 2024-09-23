@@ -1,5 +1,19 @@
 #include "label/gen_label.cuh"
 
+void test_cuda_error (string s) {
+    cudaError_t err = cudaGetLastError(); // 检查内核内存申请错误
+    if (err != cudaSuccess) {
+        printf("!INIT CUDA ERROR: %s %s\n", s.c_str(), cudaGetErrorString(err));
+    }
+}
+
+__device__ void test_cuda_error_device (char s[]) {
+    cudaError_t err = cudaGetLastError(); // 检查内核内存申请错误
+    if (err != cudaSuccess) {
+        printf("!INIT CUDA ERROR: %s %s\n", s, cudaGetErrorString(err));
+    }
+}
+
 // 通过 hashtable 的快速查询
 __device__ int query_dis_by_hash_table
 (int u, int v, cuda_hashTable_v2<weight_type> *H, cuda_vector_v2<hub_type> *L, int hop_now, int hop_cst) {
@@ -23,9 +37,8 @@ __device__ int query_dis_by_hash_table
 // 动态并行加速查询
 // u, v, d_size, d_has, d, label, hop, hop_cst;
 // (node_id, d->current_size, das, d, has, L_gpu, t1, hop_now, hop_cst)
-__global__ void query_parallel (int sv, int st, int ed, int sz, cuda_hashTable_v2<weight_type> *das, int *d,
-cuda_hashTable_v2<weight_type> *has, cuda_vector_v2<hub_type> *L_gpu,
-int V, int thread_num, int tidd, int* LT_push_back, int hop_now, int hop_cst) {
+__global__ void query_parallel (int sv, int st, int sz, cuda_hashTable_v2<weight_type> *das, int *d, cuda_hashTable_v2<weight_type> *has,
+cuda_vector_v2<hub_type> *L_gpu, int thread_num, int tidd, int* LT_push_back, int hop_now, int hop_cst) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (tid < 0 || tid >= sz) {
@@ -49,7 +62,6 @@ int V, int thread_num, int tidd, int* LT_push_back, int hop_now, int hop_cst) {
     }
 
     das->modify(v, 1e9);
-
 }
 
 // 通过 L_push_back 插入到 Lable 中
@@ -344,7 +356,7 @@ cuda_vector_v2<T_item> *T0, int start_id, int end_id, int* LT_push_back, int *d,
     d_end = d_start;
 
     int node_id = nid[start_id + tid];
-    // printf("%d, ", node_id);
+    
     // node_id 的 T 队列
     cuda_vector_v2<T_item> *t0 = (T0 + node_id);
 
@@ -401,11 +413,13 @@ cuda_vector_v2<T_item> *T0, int start_id, int end_id, int* LT_push_back, int *d,
             }
         }
     }
-
-    // u, v, d_size, hash, label, t, hop, hop_cst;
-    query_parallel <<< (d_end - d_start + 127) / 128, 128 >>>
-    (node_id, d_start, d_end, d_end - d_start, das, &d[0], has, L_gpu, V, thread_num, tid, LT_push_back, hop_now, hop_cst);
     cudaDeviceSynchronize();
+    // u, v, d_size, hash, label, t, hop, hop_cst;
+    if (d_end - d_start > 0){
+        query_parallel <<< (d_end - d_start + 127) / 128, 128 >>>
+        (node_id, d_start, d_end - d_start, das, d, has, L_gpu, thread_num, tid, LT_push_back, hop_now, hop_cst);
+        cudaDeviceSynchronize();
+    }
 
     // 改回 hashtable
     cnt = 0;
@@ -429,6 +443,8 @@ __global__ void add_timer (clock_t* tot, clock_t *t, int thread_num) {
 
 // 生成 label 的过程
 void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v2 *info, vector<vector<hub_type> >&L, vector<int>& nid_vec) {
+
+    cudaError_t err;
 
     int V = input_graph.OUTs_Neighbor_start_pointers.size() - 1;
     int E = input_graph.OUTs_Edges.size();
@@ -460,11 +476,12 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     // 测试 cuda_vector 和 cuda_hash 的部分
     // test_mmpool(V, thread_num, 2, info, L_hash);
     int *nid;
-    cudaMallocManaged(&nid, V * sizeof(int));
+    cudaMallocManaged(&nid, vertex_num * sizeof(int));
     cudaDeviceSynchronize();
     for (int i = 0; i < vertex_num; ++i){
         nid[i] = nid_vec[i];
     }
+    cudaDeviceSynchronize();
 
     clear_L <<< dimGrid_V, dimBlock >>> (V, info->L_cuda);
     clear_T <<< dimGrid_V, dimBlock >>> (V, info->T0);
@@ -473,7 +490,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 
     init_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T0, info->L_cuda, nid);
     cudaDeviceSynchronize();
-    cudaError_t err;
+
     err = cudaGetLastError(); // 检查内核内存申请错误
     if (err != cudaSuccess) {
         printf("!INIT CUDA ERROR0: %s\n", cudaGetErrorString(err));
@@ -508,35 +525,31 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
             // end_id = min(V - 1, start_id + thread_num - 1);
             end_id = start_id - 1;
             start_id = max(0, start_id - thread_num);
-            
+            printf("start, end: %d %d !\n", start_id, end_id);
+
             // 根据奇偶性，轮流使用 T0、T1，不需要交换指针
             if (iter % 2 == 1) {
                 gen_label_hsdl_v3 <<< dimGrid_thread, dimBlock >>> 
                 (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
                 info->L_cuda, L_hash, D_hash, info->T0, start_id, end_id, LT_push_back, D_vector, nid);
                 cudaDeviceSynchronize();
-
                 // push_back L
                 Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid);
                 cudaDeviceSynchronize();
-
                 // clear_T <<< dimGrid_V, dimBlock >>> (V, info->T0, info->L_cuda);
                 // cudaDeviceSynchronize();
 
                 // push_back T
                 Push_Back_T <<< dimGrid_thread, dimBlock >>> (V, thread_num, start_id, end_id, LT_push_back, info->T1, nid);
                 cudaDeviceSynchronize();
-            
             }else{
                 gen_label_hsdl_v3 <<< dimGrid_thread, dimBlock >>> 
                 (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
                 info->L_cuda, L_hash, D_hash, info->T1, start_id, end_id, LT_push_back, D_vector, nid);
                 cudaDeviceSynchronize();
-
                 // push_back L
                 Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid);
                 cudaDeviceSynchronize();
-                
                 // clear_T <<< dimGrid_V, dimBlock >>> (V, info->T0, info->L_cuda);
                 // cudaDeviceSynchronize();
 

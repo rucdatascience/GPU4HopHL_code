@@ -72,8 +72,8 @@ public:
 template <typename T> __host__ mmpool_v2<T>::mmpool_v2(int V, int num_blocks) : num_blocks(num_blocks) {
     
     lock = 0;
-    cudaMallocManaged(&blocks_pool, sizeof(block) * num_blocks);
-    cudaMallocManaged(&blocks_state, sizeof(int) * num_blocks);
+    cudaMallocManaged(&blocks_pool, (long long) sizeof(block) * num_blocks);
+    cudaMallocManaged(&blocks_state, (long long) sizeof(int) * num_blocks);
 
     // 初始化每个块
     for (int i = 0; i < num_blocks; ++i) {
