@@ -3,22 +3,22 @@
 #pragma once
 
 /* label format */
-class hop_constrained_two_hop_label
+struct  hop_constrained_two_hop_label
 {
 public:
 	int hub_vertex, parent_vertex, hop, distance;
 
 	hop_constrained_two_hop_label(int hv, int pv, int h, int d) : hub_vertex(hv), parent_vertex(pv), hop(h), distance(d) {}
-	hop_constrained_two_hop_label() {}
+	__device__ __host__ hop_constrained_two_hop_label() {}
 	// copy
-	hop_constrained_two_hop_label(const hop_constrained_two_hop_label &other)
+	__device__ __host__ hop_constrained_two_hop_label(const hop_constrained_two_hop_label &other)
 	{
 		hub_vertex = other.hub_vertex;
 		parent_vertex = other.parent_vertex;
 		hop = other.hop;
 		distance = other.distance;
 	}
-	~hop_constrained_two_hop_label() {}
+	__device__ __host__ ~hop_constrained_two_hop_label() {}
 };
 
 // 定义哈希函数

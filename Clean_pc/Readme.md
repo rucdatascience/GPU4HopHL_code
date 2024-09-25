@@ -1,19 +1,30 @@
-# CPU_HopHL
-- CPU版本的HopHL算法，用于对比GPU版本的性能。
-- 本项目使用clangd，cmake
-- 安装boost库，用于使用fibonacci堆。https://www.boost.org/
-- 在HBPLL/test.h文件中，可以修改宏定义DATASET_PATH ，来选择不同的数据集
-- cmake编译
+# GPU_clean
 
-170 sever require: source /opt/rh/devtoolset-11/enable
+- GPU 版本的 Clean 算法，相较于 CPU 算法提高 20%~30%。
 
-source a.sh
+- 代码编写环境：cmake 3.8, g++ 4.8.5, cuda 12.4, boost 1.85.0
+
+- cmake编译运行，也可以直接运行目录下的test.sh
+
+
+
+170 sever require:
+
+source /opt/rh/devtoolset-11/enable
+
+source switch-cuda.sh 11.8
+
+参数说明
+0:生成新图
+1:读取之前生成的未清洗的label给gpu清洗
 
 
 ```shell
+rm -rf build
 mkdir build
 cd build
 cmake3 ..
 make
 ./test
+0
 ```
