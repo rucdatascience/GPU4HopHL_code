@@ -442,7 +442,7 @@ __global__ void add_timer (clock_t* tot, clock_t *t, int thread_num) {
 }
 
 // 生成 label 的过程
-void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v2 *info, vector<vector<hub_type> >&L, vector<int>& nid_vec) {
+void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v2 *info, vector<vector<hub_type> >&L, vector<int>& nid_vec,int nid_vec_id) {
 
     cudaError_t err;
 
@@ -454,7 +454,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     int hop_cst = info->hop_cst;
     int thread_num = info->thread_num;
     
-    int vertex_num = nid_vec.size();
+    int vertex_num = info->nid_size[nid_vec_id];
     
     int dimGrid_thread, dimGrid_V, dimBlock = 64;
     dimGrid_V = (V + dimBlock - 1) / dimBlock;
@@ -475,13 +475,13 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     
     // 测试 cuda_vector 和 cuda_hash 的部分
     // test_mmpool(V, thread_num, 2, info, L_hash);
-    int *nid;
-    cudaMallocManaged(&nid, vertex_num * sizeof(int));
-    cudaDeviceSynchronize();
-    for (int i = 0; i < vertex_num; ++i){
-        nid[i] = nid_vec[i];
-    }
-    cudaDeviceSynchronize();
+    int *nid = info->nid[nid_vec_id];
+    // cudaMallocManaged(&nid, vertex_num * sizeof(int));
+    // cudaDeviceSynchronize();
+    // for (int i = 0; i < vertex_num; ++i){
+    //     nid[i] = nid_vec[i];
+    // }
+    // cudaDeviceSynchronize();
 
     clear_L <<< dimGrid_V, dimBlock >>> (V, info->L_cuda);
     clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T0);
@@ -525,7 +525,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
             // end_id = min(V - 1, start_id + thread_num - 1);
             end_id = start_id - 1;
             start_id = max(0, start_id - thread_num);
-            printf("start, end: %d %d !\n", start_id, end_id);
+            // printf("start, end: %d %d !\n", start_id, end_id);
 
             // 根据奇偶性，轮流使用 T0、T1，不需要交换指针
             if (iter % 2 == 1) {
@@ -533,6 +533,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
                 (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
                 info->L_cuda, L_hash, D_hash, info->T0, start_id, end_id, LT_push_back, D_vector, nid);
                 cudaDeviceSynchronize();
+
                 // push_back L
                 Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid);
                 cudaDeviceSynchronize();
@@ -547,6 +548,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
                 (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
                 info->L_cuda, L_hash, D_hash, info->T1, start_id, end_id, LT_push_back, D_vector, nid);
                 cudaDeviceSynchronize();
+                
                 // push_back L
                 Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid);
                 cudaDeviceSynchronize();

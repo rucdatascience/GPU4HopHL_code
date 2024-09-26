@@ -209,8 +209,9 @@ int main () {
     int iteration_source_times = 2000, iteration_terminal_times = 2000;
 
     // 样例图参数
-    int V = 10000, E = 50000, Distributed_Graph_Num = 10;
+    int V = 200000, E = 1000000, Distributed_Graph_Num = 300;
     int G_max = V / Distributed_Graph_Num + 1;
+    // G_max = 1;
     int CPU_Num = 1, GPU_Num = 4;
 
     int hop_cst = 4, thread_num = 1000;
@@ -228,21 +229,11 @@ int main () {
 
     // gpu info
     info_gpu = new hop_constrained_case_info_v2();
-    info_gpu->init(V, (long long)V * V * (hop_cst + 1), hop_cst, G_max, thread_num);
+    info_gpu->init(V, hop_cst, G_max, thread_num, graph_pool.graph_group);
     info_gpu->hop_cst = hop_cst;
     info_gpu->thread_num = thread_num;
     info_gpu->use_d_optimization = 1;
     printf("init gpu_info successful!\n");
-
-    // 分布式图
-    graph_pool.graph_group.resize(Distributed_Graph_Num);
-    int Nodes_Per_Graph = (V - 1) / Distributed_Graph_Num + 1;
-    for (int i = 0; i < Distributed_Graph_Num; ++ i) {
-        for (int j = Nodes_Per_Graph * i; j < Nodes_Per_Graph * (i + 1); ++j) {
-            if (j >= V) break;
-            graph_pool.graph_group[i].push_back(j);
-        }
-    }
     
     /* test parameters */
     int generate_new_graph = 1;
@@ -250,6 +241,7 @@ int main () {
     int check_correctness_gpu = 1;
     int check_correctness_cpu = 1;
     int check_correctness = 1;
+    int use_cd = 0;
     int print_L = 0;
     
     // init label
@@ -268,13 +260,40 @@ int main () {
     }else{
         instance_graph.txt_read("../data/simple_iterative_tests.txt");
     }
+    // 通过 instance_graph 生成 CSR_graph
+    LDBC<weight_type> graph(V);
+    graph_v_of_v_to_LDBC(graph, instance_graph);
+    csr_graph = toCSR(graph);
     printf("generation graph successful!\n");
 
     // init cpu_generation
     hop_constrained_two_hop_labels_generation_init(instance_graph, info_cpu);
 
-    // generate_Group_CDLP(instance_graph, graph_pool.graph_group, G_max);
-    Distributed_Graph_Num = graph_pool.graph_group.size();
+    // 分布式图
+    if (use_cd) {
+        generate_Group_CDLP(instance_graph, graph_pool.graph_group, G_max);
+        Distributed_Graph_Num = graph_pool.graph_group.size();
+    } else {
+        graph_pool.graph_group.resize(Distributed_Graph_Num);
+        int Nodes_Per_Graph = (V - 1) / Distributed_Graph_Num + 1;
+        for (int i = 0; i < Distributed_Graph_Num; ++ i) {
+            for (int j = Nodes_Per_Graph * i; j < Nodes_Per_Graph * (i + 1); ++j) {
+                if (j >= V) break;
+                graph_pool.graph_group[i].push_back(j);
+            }
+        }
+    }
+
+    cudaMallocManaged(&info_gpu->nid, sizeof(int*) * Distributed_Graph_Num);
+    cudaMallocManaged(&info_gpu->nid_size, sizeof(int) * Distributed_Graph_Num);
+    for (int j = 0; j < Distributed_Graph_Num; ++ j) {
+        cudaMallocManaged(&info_gpu->nid[j], sizeof(int) * graph_pool.graph_group[j].size());
+        info_gpu->nid_size[j] = graph_pool.graph_group[j].size();
+        for (int k = 0; k < graph_pool.graph_group[j].size(); ++k) {
+            info_gpu->nid[j][k] = graph_pool.graph_group[j][k];
+        }
+    }
+    
     for (int j = 0; j < Distributed_Graph_Num; ++ j) {
         printf("graph size: %d !\n", graph_pool.graph_group[j].size());
         // for (int k = 0; k < graph_pool.graph_group[j].size(); ++k) {
@@ -282,16 +301,6 @@ int main () {
         // }
         // printf("\n\n");
     }
-    // for (int j = 0; j < Distributed_Graph_Num; ++ j) {
-    //     for (int k = 0; k < graph_pool.graph_group[j].size(); ++k) {
-    //         printf("%d ", graph_pool.graph_group[j][k]);
-    //     }
-    //     printf("\n\n");
-    // }
-    // 通过 instance_graph 生成 CSR_graph
-    LDBC<weight_type> graph(V);
-    graph_v_of_v_to_LDBC(graph, instance_graph);
-    csr_graph = toCSR(graph);
     
     // distributed cpu gpu generation
     // auto begin = std::chrono::high_resolution_clock::now();
@@ -362,10 +371,11 @@ int main () {
         Executive_Core x = pq.top();
         pq.pop();
         auto begin = std::chrono::high_resolution_clock::now();
+        printf("xxxxxxxxxxxxxx: %lf, %d, %d\n", x.time_generation, x.id, x.core_type);
         if (x.core_type == 0) { // core type is cpu
             hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L, graph_pool.graph_group[i]);
         }else{
-            label_gen(csr_graph, info_gpu, L, graph_pool.graph_group[i]);
+            label_gen(csr_graph, info_gpu, L, graph_pool.graph_group[i], i);
         }
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
