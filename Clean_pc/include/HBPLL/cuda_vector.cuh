@@ -6,9 +6,7 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
-struct label {
-    int v, h, d;
-};
+
 
 template <typename T> class base_memory {
     public:
