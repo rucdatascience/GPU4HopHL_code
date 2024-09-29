@@ -418,6 +418,96 @@ static vector<vector<hop_constrained_two_hop_label>> hop_constrained_sortL(int n
 	return output_L;
 }
 
+static void hop_constrained_clean_L_distributed (hop_constrained_case_info &case_info, vector<vector<hop_constrained_two_hop_label> >& LL, 
+vector<int>& nid_vec, int thread_num) {
+
+	auto &L = LL;
+	int N = L.size();
+	label_size_before_canonical_repair_599 = 0;
+	label_size_after_canonical_repair_599 = 0;
+
+	ThreadPool pool(thread_num);
+	std::vector<std::future<int>> results;
+
+	int nid_size = nid_vec.size();
+	for (auto &v: nid_vec) {
+		// int x = nid_vec[v];
+		// printf("%d nid_vec %d\n", v, v);
+		results.emplace_back(pool.enqueue(
+			[v, &L] { // pass const type value j to thread; [] can be empty
+				mtx_599[max_N_ID_for_mtx_599 - 1].lock();
+				int used_id = Qid_599.front();
+				Qid_599.pop();
+				mtx_599[max_N_ID_for_mtx_599 - 1].unlock();
+
+				vector<hop_constrained_two_hop_label> Lv_final;
+
+				mtx_599[v].lock_shared();
+				vector<hop_constrained_two_hop_label> Lv = L[v];
+				mtx_599[v].unlock_shared();
+				label_size_before_canonical_repair_599 += Lv.size();
+
+				auto &T = Temp_L_vk_599[used_id];
+
+				for (auto Lvi : Lv)
+				{
+					int u = Lvi.hub_vertex;
+					int u_hop = Lvi.hop;
+
+					mtx_599[u].lock_shared();
+					auto Lu = L[u];
+					mtx_599[u].unlock_shared();
+
+					int min_dis = std::numeric_limits<int>::max();
+					for (auto &label1 : Lu)
+					{
+						for (auto &label2 : T[label1.hub_vertex])
+						{
+							if (label1.hop + label2.second <= u_hop)
+							{
+								long long int query_dis =
+									label1.distance + (long long int)label2.first;
+								if (query_dis < min_dis)
+								{
+									min_dis = query_dis;
+								}
+							}
+						}
+					}
+
+					if (min_dis > Lvi.distance)
+					{
+						Lv_final.push_back(Lvi);
+						T[u].push_back({Lvi.distance, Lvi.hop});
+					}
+				}
+
+				for (auto label : Lv_final)
+				{
+					vector<pair<int, int>>().swap(T[label.hub_vertex]);
+				}
+
+				mtx_599[v].lock();
+				L[v] = Lv_final;
+				L[v].shrink_to_fit();
+				mtx_599[v].unlock();
+				label_size_after_canonical_repair_599 += Lv_final.size();
+
+				mtx_599[max_N_ID_for_mtx_599 - 1].lock();
+				Qid_599.push(used_id);
+				mtx_599[max_N_ID_for_mtx_599 - 1].unlock();
+
+				return 1; // return to results; the return type must be the same with
+						  // results
+			}));
+	}
+
+	for (auto &&result : results)
+		result.get(); // all threads finish here
+	results.clear();
+
+}
+
 /*canonical_repair*/
 static void hop_constrained_clean_L(hop_constrained_case_info &case_info, int thread_num)
 {
@@ -630,5 +720,5 @@ static void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_
 
 	case_info.time_total = case_info.time_initialization + case_info.time_generate_labels + case_info.time_sortL + case_info.time_canonical_repair;
 
-	hop_constrained_clear_global_values();
+	// hop_constrained_clear_global_values();
 }

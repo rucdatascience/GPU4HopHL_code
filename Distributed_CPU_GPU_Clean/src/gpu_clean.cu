@@ -222,7 +222,7 @@ void gpu_clean_init (graph_v_of_v<int> &input_graph, vector<vector<label>> &inpu
 
 }
 
-double gpu_clean(graph_v_of_v<int> &input_graph, vector<vector<label>> &input_L, gpu_clean_info& info_gpu, 
+double gpu_clean(graph_v_of_v<int> &input_graph, gpu_clean_info& info_gpu, 
 vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_id) {
 
     int V = input_graph.size();

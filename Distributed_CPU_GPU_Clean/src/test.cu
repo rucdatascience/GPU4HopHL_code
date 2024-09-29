@@ -79,14 +79,15 @@ record_info main_element () {
     record_info record_info_case;
     Graph_pool<int> graph_pool;
 
+    // iteration times
     int iteration_source_times = 1000, iteration_terminal_times = 1000;
 
     // parameters
     int ec_min = 1, ec_max = 100;
     int V = 10000, E = 100000, hop_cst = 5, thread_num = 1000;
-    int Distributed_Graph_Num = 10;
+    int Distributed_Graph_Num = 5;
     int G_max = 1000;
-    int CPU_Num = 1, GPU_Num = 4;
+    int CPU_Num = 0, GPU_Num = 0;
 
     // gpu case_info
     gpu_clean_info info_gpu;
@@ -118,7 +119,6 @@ record_info main_element () {
     }
 
     // init nid in gpu
-
     printf("Generation Start !\n");
     hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, uncleaned_L);
     printf("Generation End !\n");
@@ -128,21 +128,32 @@ record_info main_element () {
     record_info_case.CPU_Clean_Time = info_cpu.time_canonical_repair;
 
     vector<vector<label>> L;
-
     int L_size = uncleaned_L.size();
     L.resize(L_size);
-
     for (int i = 0; i < L_size; i++) {
         L[i].resize(uncleaned_L[i].size());
         int _size = uncleaned_L[i].size();
         for (int j = 0; j < _size; j++) {
-            L[i][j].v = uncleaned_L[i][j].hub_vertex;
-            L[i][j].h = uncleaned_L[i][j].hop;
-            L[i][j].d = uncleaned_L[i][j].distance;
+            L[i][j].v = uncleaned_L[i][j].hub_vertex, L[i][j].h = uncleaned_L[i][j].hop, L[i][j].d = uncleaned_L[i][j].distance;
         }
     }
+
+    for (int i = 0; i < Distributed_Graph_Num; ++i) {
+        hop_constrained_clean_L_distributed(info_cpu, uncleaned_L, graph_pool.graph_group[i], info_cpu.thread_num);
+    }
+    // hop_constrained_clean_L(info_cpu, info_cpu.thread_num);
+
     vector<vector<hop_constrained_two_hop_label>> L_gpu;
+    vector<vector<hop_constrained_two_hop_label>> L_cpu;
+    L_cpu.resize(L_size);
     L_gpu.resize(L_size);
+
+    gpu_clean_init(instance_graph, L, info_gpu, graph_pool, thread_num, hop_cst);
+    printf("gpu_clean_init\n");
+    double GPU_clean_time = 0.0;
+    for (int i = 0; i < Distributed_Graph_Num; ++i) {
+        GPU_clean_time += gpu_clean(instance_graph, info_gpu, L_gpu, thread_num, i);
+    }
 
     priority_queue<Executive_Core> pq;
     while (!pq.empty()) pq.pop();
@@ -153,57 +164,44 @@ record_info main_element () {
         pq.push(Executive_Core(CPU_Num + i, 0, 1)); // id, time, cpu/gpu
     }
     // for (int i = 0; i < Distributed_Graph_Num; ++i) {
-        
     //     Executive_Core x = pq.top();
     //     pq.pop();
+
     //     auto begin = std::chrono::high_resolution_clock::now();
     //     printf("xxxxxxxxxxxxxx: %lf, %d, %d\n", x.time_generation, x.id, x.core_type);
     //     if (x.core_type == 0) { // core type is cpu
-    //         hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L, graph_pool.graph_group[i]);
+    //         // hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L, graph_pool.graph_group[i]);
     //     }else{
-    //         label_gen(csr_graph, info_gpu, L, graph_pool.graph_group[i], i);
+    //         gpu_clean(instance_graph, L, info_gpu, L_gpu, thread_num, i);
     //     }
     //     auto end = std::chrono::high_resolution_clock::now();
     //     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-        
     //     x.time_generation += duration;
-    //     pq.push(x);
 
+    //     pq.push(x);
     // }
-    gpu_clean_init(instance_graph, L, info_gpu, graph_pool, thread_num, hop_cst);
-    printf("gpu_clean_init\n");
-    double GPU_clean_time = 0.0;
-    for (int i = 0; i < Distributed_Graph_Num; ++i) {
-        GPU_clean_time += gpu_clean(instance_graph, L, info_gpu, L_gpu, thread_num, i);
-    }
+
     std::cout << "GPU Clean Finished" << std::endl;
     std::cout << "GPU Clean Time: " << GPU_clean_time << " s" << std::endl;
     record_info_case.GPU_Clean_Time = GPU_clean_time;
 
     auto& L_CPUclean = info_cpu.L;
-    int uncleaned_L_num = 0, L_gpu_num = 0, L_CPUclean_num = 0;
+    int uncleaned_L_num = 0, L_gpu_num = 0, L_cpu_num = 0, L_CPUclean_num = 0;
     for (int i = 0; i < L_size; i++) {
         L_CPUclean_num += L_CPUclean[i].size();
         uncleaned_L_num += L[i].size();
         L_gpu_num += L_gpu[i].size();
+        L_cpu_num += uncleaned_L[i].size();
     }
     cout << "L_CPU_clean_num: " << L_CPUclean_num << endl;    
     cout << "uncleaned_L_num: " << uncleaned_L_num << endl;
     cout << "L_GPU_num: " << L_gpu_num << endl;
+    cout << "L_CPU_num: " << L_cpu_num << endl;
 
     info_cpu.L = L_gpu;
     cout << "check start !" << endl;
     hop_constrained_check_correctness(info_cpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
     cout << "check end !" << endl;
-    
-    //Lc[0]->pool->~base_memory();
-    // cudaFree(Lc[0]->pool);
-    // // cuda free
-    // for (int i = 0; i < L_size; i++) {
-    //     Lc[i]->~cuda_vector();
-    //     cudaFree(Lc[i]);
-    // }
-    // cudaFree(Lc);
 
     return record_info_case;
 }
