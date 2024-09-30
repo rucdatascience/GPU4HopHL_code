@@ -273,20 +273,29 @@ vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_
     
     // 将L(csr)转为res(vector<vector>)
     for (int i = 0; i < nid_size; ++i) {
-        int node_id = nid[i];
-        long long start = L_start[node_id];
-        long long end = L_start[node_id + 1];
-        for (long long j = start; j < end; ++j) {
-            if (mark[j] == 0) {
-                hop_constrained_two_hop_label temp;
-                temp.hub_vertex = L[j].v;
-                temp.hop = L[j].h;
-                temp.distance = L[j].d;
-                res[node_id].emplace_back(temp);
-            }
-        }
-        res[node_id].shrink_to_fit();
+        results_gpu.emplace_back(pool_gpu.enqueue(
+            [i, nid_vec_id, &res, &info_gpu] { // pass const type value j to thread; [] can be empty
+                int node_id = info_gpu.nid[nid_vec_id][i];
+                long long start = info_gpu.L_start[node_id];
+                long long end = info_gpu.L_start[node_id + 1];
+                for (long long j = start; j < end; ++j) {
+                    if (info_gpu.mark[j] == 0) {
+                        hop_constrained_two_hop_label temp;
+                        temp.hub_vertex = info_gpu.L[j].v;
+                        temp.hop = info_gpu.L[j].h;
+                        temp.distance = info_gpu.L[j].d;
+                        res[node_id].emplace_back(temp);
+                    }
+                }
+                res[node_id].shrink_to_fit();
+                return 1;
+        }));
     }
+    for (auto &&result : results_gpu) {
+	    result.get(); // all threads finish here
+    }
+	results_gpu.clear();
+
     // cudaEventRecord(stop);
     // cudaEventSynchronize(stop);
     

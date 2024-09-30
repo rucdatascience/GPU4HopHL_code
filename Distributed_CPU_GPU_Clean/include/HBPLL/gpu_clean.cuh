@@ -31,6 +31,9 @@ public:
     int *hash_array = nullptr;
 };
 
+static std::vector<std::future<int>> results_gpu;
+static ThreadPool pool_gpu(100);
+
 __global__ void get_hash (int V, int K, int tc, int start_id, int end_id, label *L, long long *L_start, int *hash_array, int *mark);
 __device__ int query_label (label* L, long long start, long long end, int i, int h_v, int* Lc_hashed, int V, int K);
 __global__ void clean_kernel (int V, int K, int tc, label* L, long long* L_start, int* hash_array,int *mark);

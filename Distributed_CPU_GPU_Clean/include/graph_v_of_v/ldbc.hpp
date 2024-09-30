@@ -237,7 +237,7 @@ void LDBC<weight_type>::load_graph() {
 	std::cout << "Done." << std::endl;
 }
 
-// save the results in csv format to the given path
+// save the result in csv format to the given path
 template <typename weight_type>
 void LDBC<weight_type>::save_to_CSV(std::vector<std::pair<std::string, std::string>>& res, std::string file_path) {
 	std::ofstream out(file_path, std::ios::app);

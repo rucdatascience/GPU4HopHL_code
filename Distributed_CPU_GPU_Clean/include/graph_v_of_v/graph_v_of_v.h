@@ -37,7 +37,7 @@ rm A
 #include <cstring>
 #include <fstream>
 #include <text_mining/parse_string.h> 
-#include <tool_functions/sorted_vector_binary_operations.h>
+#include <text_mining/sorted_vector_binary_operations.h>
 #include <text_mining/binary_save_read_vector_of_vectors.h>
 #include <unordered_map>  // 添加这个头文件
 

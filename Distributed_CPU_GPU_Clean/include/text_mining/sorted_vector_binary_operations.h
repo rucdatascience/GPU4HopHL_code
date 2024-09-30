@@ -13,7 +13,7 @@ https://blog.csdn.net/EbowTang/article/details/50770315
 */
 
 template <typename T>
-static bool sorted_vector_binary_operations_search(
+bool sorted_vector_binary_operations_search(
     std::vector<std::pair<int, T>> &input_vector, int key) {
 
   /*return true if key is in vector; time complexity O(log n)*/
@@ -36,7 +36,7 @@ static bool sorted_vector_binary_operations_search(
 }
 
 template <typename T>
-static T sorted_vector_binary_operations_search_weight(
+T sorted_vector_binary_operations_search_weight(
     std::vector<std::pair<int, T>> &input_vector, int key) {
 
   /*return std::numeric_limits<T>::max() if key is not in vector; time
@@ -60,7 +60,7 @@ static T sorted_vector_binary_operations_search_weight(
 }
 
 template <typename T>
-static int sorted_vector_binary_operations_search_position(
+int sorted_vector_binary_operations_search_position(
     std::vector<std::pair<int, T>> &input_vector, int key) {
 
   /*return -1 if key is not in vector; time complexity O(log n)*/
@@ -82,7 +82,7 @@ static int sorted_vector_binary_operations_search_position(
 }
 
 template <typename T>
-static void sorted_vector_binary_operations_erase(
+void sorted_vector_binary_operations_erase(
     std::vector<std::pair<int, T>> &input_vector, int key) {
 
   /*erase key from vector; time complexity O(log n + size()-position ), which is
@@ -106,20 +106,20 @@ static void sorted_vector_binary_operations_erase(
   }
 }
 template <typename T>
-static int sorted_vector_binary_operations_insert(std::vector<std::pair<int, T>> &input_vector, int key, T load) {
-    // ä½¿ç”¨ std::lower_bound æŸ¥æ‰¾é€‚å½“çš„æ’å…¥ä½ç½®
+int sorted_vector_binary_operations_insert(std::vector<std::pair<int, T>> &input_vector, int key, T load) {
+    // Ê¹ÓÃ std::lower_bound ²éÕÒÊÊµ±µÄ²åÈëÎ»ÖÃ
     auto it = std::lower_bound(input_vector.begin(), input_vector.end(), std::make_pair(key, load),
                                [](const std::pair<int, T>& a, const std::pair<int, T>& b) {
                                    return a.first < b.first;
                                });
 
-    // å¦‚æœæ‰¾åˆ°äº†åŒ¹é…çš„é”®ï¼Œåˆ™æ›´æ–°å…¶å€¼
+    // Èç¹ûÕÒµ½ÁËÆ¥ÅäµÄ¼ü£¬Ôò¸üĞÂÆäÖµ
     if (it != input_vector.end() && it->first == key) {
         it->second = load;
-        return std::distance(input_vector.begin(), it); // è¿”å›ä½ç½®
+        return std::distance(input_vector.begin(), it); // ·µ»ØÎ»ÖÃ
     }
 
-    // å¦åˆ™ï¼Œåœ¨è®¡ç®—å‡ºçš„ä½ç½®æ’å…¥æ–°å…ƒç´ 
+    // ·ñÔò£¬ÔÚ¼ÆËã³öµÄÎ»ÖÃ²åÈëĞÂÔªËØ
     it = input_vector.insert(it, {key, load});
-    return std::distance(input_vector.begin(), it); // è¿”å›æ–°æ’å…¥å…ƒç´ çš„ä½ç½®
+    return std::distance(input_vector.begin(), it); // ·µ»ØĞÂ²åÈëÔªËØµÄÎ»ÖÃ
 }

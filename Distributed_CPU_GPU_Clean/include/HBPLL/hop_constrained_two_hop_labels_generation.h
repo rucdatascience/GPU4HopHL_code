@@ -1,10 +1,15 @@
 #pragma once
+#ifndef HOP_CONSTRAINED_TWO_HOP_LABELS_GENERATION_H
+#define HOP_CONSTRAINED_TWO_HOP_LABELS_GENERATION_H
+
 #include <HBPLL/hop_constrained_two_hop_labels.h>
 // #include <HBPLL/two_hop_labels.h>
 #include <boost/heap/fibonacci_heap.hpp>
 #include <graph_v_of_v/graph_v_of_v.h>
 #include <shared_mutex>
-#include <tool_functions/ThreadPool.h>
+#include <text_mining/ThreadPool.h>
+
+#define num_of_threads_cpu 100
 
 /*unique code for this file: 599*/
 static long long int max_labal_size_599;
@@ -24,6 +29,9 @@ static vector<vector<hop_constrained_two_hop_label>> L_temp_599;
 static vector<vector<vector<pair<int, int>>>> Temp_L_vk_599;
 static vector<vector<pair<int, int>>> dist_hop_599;
 static vector<vector<vector<int>>> Vh_599;
+
+static std::vector<std::future<int>> results;
+static ThreadPool pool(num_of_threads_cpu);
 
 static queue<int> Qid_599;
 
@@ -397,8 +405,8 @@ static vector<vector<hop_constrained_two_hop_label>> hop_constrained_sortL(int n
 
 	/*time complexity: O(V*L*logL), where L is average number of labels per
 	 * vertex*/
-	ThreadPool pool(num_of_threads);
-	std::vector<std::future<int>> results; // return typename: xxx
+	// ThreadPool pool(num_of_threads);
+	// std::vector<std::future<int>> results; // return typename: xxx
 	for (int v_k = 0; v_k < N; v_k++)
 	{
 		results.emplace_back(pool.enqueue(
@@ -414,6 +422,7 @@ static vector<vector<hop_constrained_two_hop_label>> hop_constrained_sortL(int n
 	}
 	for (auto &&result : results)
 		result.get(); // all threads finish here
+	results.clear();
 
 	return output_L;
 }
@@ -426,8 +435,8 @@ vector<vector<hop_constrained_two_hop_label> >& L_cpu, vector<int>& nid_vec, int
 	label_size_before_canonical_repair_599 = 0;
 	label_size_after_canonical_repair_599 = 0;
 
-	ThreadPool pool(thread_num);
-	std::vector<std::future<int>> results;
+	// ThreadPool pool(thread_num);
+	// std::vector<std::future<int>> results;
 
 	int nid_size = nid_vec.size();
 	for (auto &v: nid_vec) {
@@ -518,8 +527,8 @@ static void hop_constrained_clean_L(hop_constrained_case_info &case_info, int th
 	label_size_before_canonical_repair_599 = 0;
 	label_size_after_canonical_repair_599 = 0;
 
-	ThreadPool pool(thread_num);
-	std::vector<std::future<int>> results;
+	// ThreadPool pool(thread_num);
+	// std::vector<std::future<int>> results;
 
 	for (int v = 0; v < N; v++)
 	{
@@ -623,8 +632,8 @@ static void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_
 	}
 
 	int num_of_threads = case_info.thread_num;
-	ThreadPool pool(num_of_threads);
-	std::vector<std::future<int>> results;
+	// ThreadPool pool(num_of_threads);
+	// std::vector<std::future<int>> results;
 
 	ideal_graph_599 = input_graph;
 	// global_use_rank_prune = case_info.use_rank_prune;
@@ -684,7 +693,8 @@ static void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_
 	}
 	for (auto &&result : results)
 		result.get();
-
+	results.clear();
+	
 	end = std::chrono::high_resolution_clock::now();
 	case_info.time_generate_labels = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9; // s
 
@@ -722,3 +732,5 @@ static void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_
 
 	// hop_constrained_clear_global_values();
 }
+
+#endif // HOP_CONSTRAINED_TWO_HOP_LABELS_GENERATION_H
