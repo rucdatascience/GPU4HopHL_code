@@ -419,7 +419,7 @@ static vector<vector<hop_constrained_two_hop_label>> hop_constrained_sortL(int n
 }
 
 static void hop_constrained_clean_L_distributed (hop_constrained_case_info &case_info, vector<vector<hop_constrained_two_hop_label> >& LL, 
-vector<int>& nid_vec, int thread_num) {
+vector<vector<hop_constrained_two_hop_label> >& L_cpu, vector<int>& nid_vec, int thread_num) {
 
 	auto &L = LL;
 	int N = L.size();
@@ -434,7 +434,7 @@ vector<int>& nid_vec, int thread_num) {
 		// int x = nid_vec[v];
 		// printf("%d nid_vec %d\n", v, v);
 		results.emplace_back(pool.enqueue(
-			[v, &L] { // pass const type value j to thread; [] can be empty
+			[v, &L, &L_cpu] { // pass const type value j to thread; [] can be empty
 				mtx_599[max_N_ID_for_mtx_599 - 1].lock();
 				int used_id = Qid_599.front();
 				Qid_599.pop();
@@ -482,12 +482,13 @@ vector<int>& nid_vec, int thread_num) {
 					}
 				}
 
-				for (auto label : Lv_final)
-				{
+				for (auto label : Lv_final){
 					vector<pair<int, int>>().swap(T[label.hub_vertex]);
 				}
 
 				mtx_599[v].lock();
+				L_cpu[v] = Lv_final;
+				L_cpu[v].shrink_to_fit();
 				L[v] = Lv_final;
 				L[v].shrink_to_fit();
 				mtx_599[v].unlock();
@@ -554,8 +555,7 @@ static void hop_constrained_clean_L(hop_constrained_case_info &case_info, int th
 						{
 							if (label1.hop + label2.second <= u_hop)
 							{
-								long long int query_dis =
-									label1.distance + (long long int)label2.first;
+								long long int query_dis = label1.distance + (long long int)label2.first;
 								if (query_dis < min_dis)
 								{
 									min_dis = query_dis;

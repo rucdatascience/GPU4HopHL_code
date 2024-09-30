@@ -222,7 +222,7 @@ void gpu_clean_init (graph_v_of_v<int> &input_graph, vector<vector<label>> &inpu
 
 }
 
-double gpu_clean(graph_v_of_v<int> &input_graph, gpu_clean_info& info_gpu, 
+void gpu_clean(graph_v_of_v<int> &input_graph, gpu_clean_info& info_gpu, 
 vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_id) {
 
     int V = input_graph.size();
@@ -237,11 +237,11 @@ vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_
     int *nid = info_gpu.nid[nid_vec_id];
     int nid_size = info_gpu.nid_size[nid_vec_id];
 
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    // cudaEvent_t start, stop;
+    // cudaEventCreate(&start);
+    // cudaEventCreate(&stop);
 
-    cudaEventRecord(start);
+    // cudaEventRecord(start);
 
     int start_id, end_id, start_node_id, end_node_id;
     start_id = nid_size;
@@ -253,7 +253,7 @@ vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_
         end_node_id = nid[end_id];
         start_node_id = nid[start_id];
 
-        printf("start_id, end_id: %d %d\n", start_id, end_id);
+        // printf("start_id, end_id: %d %d\n", start_id, end_id);
 
         get_hash <<< (thread_num + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>>
         (V, K, thread_num, start_id, end_id, L, L_start, hash_array, mark, nid);
@@ -285,13 +285,14 @@ vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_
                 res[node_id].emplace_back(temp);
             }
         }
+        res[node_id].shrink_to_fit();
     }
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
+    // cudaEventRecord(stop);
+    // cudaEventSynchronize(stop);
     
-    float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop);
-    double GPU_clean_time = milliseconds / 1e3;
+    // float milliseconds = 0;
+    // cudaEventElapsedTime(&milliseconds, start, stop);
+    // double GPU_clean_time = milliseconds / 1e3;
 
-    return GPU_clean_time;
+    return;
 }

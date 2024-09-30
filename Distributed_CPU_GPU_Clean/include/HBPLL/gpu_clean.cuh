@@ -37,4 +37,4 @@ __global__ void clean_kernel (int V, int K, int tc, label* L, long long* L_start
 __global__ void clean_kernel_v2 (int V, int K, int tc, int start_id, int end_id, int *node_id, label *L, long long *L_start, int *hash_array, int *mark);
 
 void gpu_clean_init (graph_v_of_v<int> &input_graph, vector<vector<label>> &input_L, gpu_clean_info& info_gpu, Graph_pool<int>& graph_pool, int tc, int K);
-double gpu_clean (graph_v_of_v<int>& input_graph, gpu_clean_info& info_gpu, vector<vector<hop_constrained_two_hop_label>>& res, int tc, int nid_vec_id);
+void gpu_clean (graph_v_of_v<int>& input_graph, gpu_clean_info& info_gpu, vector<vector<hop_constrained_two_hop_label>>& res, int tc, int nid_vec_id);

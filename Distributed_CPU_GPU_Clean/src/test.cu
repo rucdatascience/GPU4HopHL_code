@@ -58,13 +58,13 @@ void load_labels(std::vector<std::vector<hop_constrained_two_hop_label>>& labels
 
 struct Executive_Core {
     int id;
-    double time_generation;
+    double time_clear;
     int core_type; // 0: cpu, 1: gpu
-    Executive_Core (int x, double y, int z) : id(x), time_generation(y), core_type(z) {}
+    Executive_Core (int x, double y, int z) : id(x), time_clear(y), core_type(z) {}
 };
 inline bool operator < (Executive_Core a, Executive_Core b) {
-    if (a.time_generation == b.time_generation) return a.id > b.id;
-    return a.time_generation > b.time_generation;
+    if (a.time_clear == b.time_clear) return a.id > b.id;
+    return a.time_clear > b.time_clear;
 }
 
 class record_info {
@@ -85,9 +85,9 @@ record_info main_element () {
     // parameters
     int ec_min = 1, ec_max = 100;
     int V = 10000, E = 100000, hop_cst = 5, thread_num = 1000;
-    int Distributed_Graph_Num = 5;
+    int Distributed_Graph_Num = 40;
     int G_max = 1000;
-    int CPU_Num = 0, GPU_Num = 0;
+    int CPU_Num = 1, GPU_Num = 4;
 
     // gpu case_info
     gpu_clean_info info_gpu;
@@ -138,22 +138,30 @@ record_info main_element () {
         }
     }
 
-    for (int i = 0; i < Distributed_Graph_Num; ++i) {
-        hop_constrained_clean_L_distributed(info_cpu, uncleaned_L, graph_pool.graph_group[i], info_cpu.thread_num);
-    }
-    // hop_constrained_clean_L(info_cpu, info_cpu.thread_num);
+    // vector<vector<hop_constrained_two_hop_label>> L_cpu; L_cpu.resize(L_size);
+    // double CPU_clean_time;
+    // auto begin = std::chrono::high_resolution_clock::now();
+    // for (int i = 0; i < Distributed_Graph_Num; ++i) {
+    //     hop_constrained_clean_L_distributed(info_cpu, uncleaned_L, L_cpu, graph_pool.graph_group[i], info_cpu.thread_num);
+    // }
+    // auto end = std::chrono::high_resolution_clock::now();
+    // CPU_clean_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
+    // printf("Time cpu distributed: %.6lfs\n", CPU_clean_time);
 
-    vector<vector<hop_constrained_two_hop_label>> L_gpu;
-    vector<vector<hop_constrained_two_hop_label>> L_cpu;
-    L_cpu.resize(L_size);
-    L_gpu.resize(L_size);
+    // vector<vector<hop_constrained_two_hop_label>> L_gpu; L_gpu.resize(L_size);
+    // double GPU_clean_time;
+    // begin = std::chrono::high_resolution_clock::now();
+    // gpu_clean_init(instance_graph, L, info_gpu, graph_pool, thread_num, hop_cst);
+    // for (int i = 0; i < Distributed_Graph_Num; ++i) {
+    //     gpu_clean(instance_graph, info_gpu, L_gpu, thread_num, i);
+    // }
+    // end = std::chrono::high_resolution_clock::now();
+    // GPU_clean_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
+    // printf("Time gpu distributed: %.6lfs\n", GPU_clean_time);
 
-    gpu_clean_init(instance_graph, L, info_gpu, graph_pool, thread_num, hop_cst);
-    printf("gpu_clean_init\n");
-    double GPU_clean_time = 0.0;
-    for (int i = 0; i < Distributed_Graph_Num; ++i) {
-        GPU_clean_time += gpu_clean(instance_graph, info_gpu, L_gpu, thread_num, i);
-    }
+    vector<vector<hop_constrained_two_hop_label>> L_cpu_gpu_hybrid;    
+    L_cpu_gpu_hybrid.resize(L_size);
+    double Hybrid_clean_time = 0.0;
 
     priority_queue<Executive_Core> pq;
     while (!pq.empty()) pq.pop();
@@ -163,42 +171,49 @@ record_info main_element () {
     for (int i = 0; i < GPU_Num; ++i) {
         pq.push(Executive_Core(CPU_Num + i, 0, 1)); // id, time, cpu/gpu
     }
-    // for (int i = 0; i < Distributed_Graph_Num; ++i) {
-    //     Executive_Core x = pq.top();
-    //     pq.pop();
 
-    //     auto begin = std::chrono::high_resolution_clock::now();
-    //     printf("xxxxxxxxxxxxxx: %lf, %d, %d\n", x.time_generation, x.id, x.core_type);
-    //     if (x.core_type == 0) { // core type is cpu
-    //         // hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L, graph_pool.graph_group[i]);
-    //     }else{
-    //         gpu_clean(instance_graph, L, info_gpu, L_gpu, thread_num, i);
-    //     }
-    //     auto end = std::chrono::high_resolution_clock::now();
-    //     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-    //     x.time_generation += duration;
+    gpu_clean_init(instance_graph, L, info_gpu, graph_pool, thread_num, hop_cst);
+    for (int i = 0; i < Distributed_Graph_Num; ++i) {
+        Executive_Core x = pq.top();
+        pq.pop();
+        printf("executive_core %d\n", i);
+        auto begin = std::chrono::high_resolution_clock::now();
+        // printf("xxxxxxxxxxxxxx: %lf, %d, %d\n", x.time_generation, x.id, x.core_type);
+        if (x.core_type == 0) { // core type is cpu
+            hop_constrained_clean_L_distributed(info_cpu, uncleaned_L, L_cpu_gpu_hybrid, graph_pool.graph_group[i], info_cpu.thread_num);
+        }else{
+            gpu_clean(instance_graph, info_gpu, L_cpu_gpu_hybrid, thread_num, i);
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
+        x.time_clear += duration;
 
-    //     pq.push(x);
-    // }
-
-    std::cout << "GPU Clean Finished" << std::endl;
-    std::cout << "GPU Clean Time: " << GPU_clean_time << " s" << std::endl;
-    record_info_case.GPU_Clean_Time = GPU_clean_time;
+        pq.push(x);
+    }
+    while (!pq.empty()) {
+        Executive_Core x = pq.top();
+        pq.pop();
+        Hybrid_clean_time = max(Hybrid_clean_time, x.time_clear);
+    }
+    printf("Time Hybrid: %.6lfs\n", Hybrid_clean_time);
+    // record_info_case.GPU_Clean_Time = GPU_clean_time;
 
     auto& L_CPUclean = info_cpu.L;
-    int uncleaned_L_num = 0, L_gpu_num = 0, L_cpu_num = 0, L_CPUclean_num = 0;
+    int uncleaned_L_num = 0, cleaned_L_num = 0, L_gpu_num = 0, L_cpu_num = 0, L_Hybrid_num = 0;
     for (int i = 0; i < L_size; i++) {
-        L_CPUclean_num += L_CPUclean[i].size();
         uncleaned_L_num += L[i].size();
-        L_gpu_num += L_gpu[i].size();
-        L_cpu_num += uncleaned_L[i].size();
+        cleaned_L_num += L_CPUclean[i].size();
+        // L_gpu_num += L_gpu[i].size();
+        // L_cpu_num += L_cpu[i].size();
+        L_Hybrid_num += L_cpu_gpu_hybrid[i].size();
     }
-    cout << "L_CPU_clean_num: " << L_CPUclean_num << endl;    
     cout << "uncleaned_L_num: " << uncleaned_L_num << endl;
+    cout << "cleaned_L_num: " << cleaned_L_num << endl;
     cout << "L_GPU_num: " << L_gpu_num << endl;
     cout << "L_CPU_num: " << L_cpu_num << endl;
+    cout << "L_Hybrid_num: " << L_Hybrid_num << endl;
 
-    info_cpu.L = L_gpu;
+    info_cpu.L = L_cpu_gpu_hybrid;
     cout << "check start !" << endl;
     hop_constrained_check_correctness(info_cpu, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
     cout << "check end !" << endl;
