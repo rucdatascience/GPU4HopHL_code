@@ -56,6 +56,8 @@ template <typename T> __host__ cuda_vector_v2<T>::cuda_vector_v2(mmpool_v2<T> *p
 
     // copy to cuda
     cudaMallocManaged(&this->block_idx_array, (long long) sizeof(int) * capacity);
+    cudaDeviceSynchronize();
+
     this->block_idx_array[this->blocks_num++] = idx;
 };
 
@@ -93,12 +95,15 @@ template <typename T> __device__ T *cuda_vector_v2<T>::get(int index) {
 
 };
 
-template <typename T> __device__ void cuda_vector_v2<T>::init(int V, const int vid) {
+template <typename T> __device__ void cuda_vector_v2<T>::init(int V, int vid) {
     this->current_size = 0;
     this->block_idx_array[0] = vid;
     this->blocks_num = 1;
     this->now_block = vid;
-    this->pool->set_blocks_state(vid, 0);
+    // if (V < 1000) printf("vid: %d\n", vid);
+    this->pool->blocks_state[vid] = 0;
+    // this->pool->set_blocks_state(vid, 0);
+    // __threadfence();
     this->pool->last_empty_block_idx = V;
 };
 

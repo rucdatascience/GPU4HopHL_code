@@ -14,13 +14,13 @@ public:
     }; // 一个块的元素
     block *blocks_pool = NULL; // 指向预分配的所有节点的指针
     int *blocks_state = NULL; // 当前块的状态，0为未使用，-x表示使用了x个，+y表示下一个块的位置是y
-    int num_blocks; // 块的数量
-    int last_empty_block_idx; // 最后一个空块的索引
+    int num_blocks = 0; // 块的数量
+    int last_empty_block_idx = 0; // 最后一个空块的索引
 
-    int lock; // gpu mtx
+    int lock = 0; // gpu mtx
 
     // 构造函数
-    __host__ mmpool_v2(int V, int num_blocks = 100);
+    __host__ mmpool_v2(int V, int nb);
 
     // 获取内存池元素个数
     __host__ __device__ int size();
@@ -69,14 +69,17 @@ public:
 };
 
 // 构造函数
-template <typename T> __host__ mmpool_v2<T>::mmpool_v2(int V, int num_blocks) : num_blocks(num_blocks) {
+template <typename T> __host__ mmpool_v2<T>::mmpool_v2(int V, int nb) : num_blocks(nb) {
     
     lock = 0;
-    cudaMallocManaged(&blocks_pool, (long long) sizeof(block) * num_blocks);
-    cudaMallocManaged(&blocks_state, (long long) sizeof(int) * num_blocks);
-
+    cudaMallocManaged(&blocks_pool, (long long) sizeof(block) * nb);
+    cudaDeviceSynchronize();
+    cudaMallocManaged(&blocks_state, (long long) sizeof(int) * nb);
+    cudaDeviceSynchronize();
+    // printf("num_blocks: %d\n", num_blocks);
     // 初始化每个块
-    for (int i = 0; i < num_blocks; ++i) {
+    for (int i = 0; i < nb; ++i) {
+        // printf("mmpool v2 T: %d\n", i);
         blocks_state[i] = 0;
     }
     last_empty_block_idx = V;
@@ -87,7 +90,7 @@ template <typename T> __host__ mmpool_v2<T>::mmpool_v2(int V, int num_blocks) : 
 template <typename T> __host__ __device__ int mmpool_v2<T>::size() {
     int size = 0;
     for (int i = 0; i < num_blocks; ++i) {
-        if (blocks_state[i] < 0){
+        if (blocks_state[i] < 0) {
             size -= blocks_state[i];
         }
     }
@@ -107,7 +110,9 @@ template <typename T> __host__ __device__ bool mmpool_v2<T>::is_full_block(const
 
 // 判断无效块索引
 template <typename T> __host__ __device__ bool mmpool_v2<T>::is_valid_block(const int &block_idx) {
-    if (block_idx >= 0 && block_idx < num_blocks) return true; // 无效块索引
+    if (block_idx >= 0 && block_idx < num_blocks){
+        return true; // 无效块索引
+    }
     return false;
 }
 
@@ -147,11 +152,9 @@ template <typename T> __device__ int mmpool_v2<T>::get_new_block(const int &bloc
 template <typename T> __device__ int mmpool_v2<T>::get_block_size(const int &block_idx) {
     int x = 0;
     if (blocks_state[block_idx] > 0) {
-        // __threadfence_system();
         x = nodes_per_block;
         // __threadfence_system();
     }else{
-        // __threadfence_system();
         x = -blocks_state[block_idx];
         // __threadfence_system();
     }

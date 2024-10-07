@@ -188,7 +188,7 @@ void GPU_HSDL_checker (vector<vector<hub_type> >&LL, graph_v_of_v<int> &instance
                     cout << fixed << setprecision(5) << "dis = " << q_dis << endl;
                     cout << fixed << setprecision(5) << "distances[terminal] = " << distances[terminal] << endl;
                     cout << endl;
-                    return;
+                    exit(0);
                 }else{
                     // cout << "correct !!!" << endl;
                     // cout << "source, terminal, hopcst = " << source << ", "<< terminal << ", " << hop_cst << endl;
@@ -206,11 +206,13 @@ int main () {
     
     // 测试次数参数
     int iteration_graph_times = 1;
-    int iteration_source_times = 2000, iteration_terminal_times = 2000;
+    int iteration_source_times = 1000, iteration_terminal_times = 1000;
 
     // 样例图参数
-    int V = 200000, E = 1000000, Distributed_Graph_Num = 300;
+    int V = 200000, E = 1000000;
+    int Distributed_Graph_Num = 120;
     int G_max = V / Distributed_Graph_Num + 1;
+
     // G_max = 1;
     int CPU_Num = 1, GPU_Num = 4;
 
@@ -229,6 +231,7 @@ int main () {
 
     // gpu info
     info_gpu = new hop_constrained_case_info_v2();
+    // printf("G_max init: %d\n", G_max);
     info_gpu->init(V, hop_cst, G_max, thread_num, graph_pool.graph_group);
     info_gpu->hop_cst = hop_cst;
     info_gpu->thread_num = thread_num;
@@ -242,7 +245,7 @@ int main () {
     int check_correctness_cpu = 1;
     int check_correctness = 1;
     int use_cd = 0;
-    int print_L = 0;
+    string data_path = "../data/simple_iterative_tests.txt";
     
     // init label
     L_gpu.resize(V);
@@ -258,7 +261,9 @@ int main () {
         instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
         instance_graph.txt_save("../data/simple_iterative_tests.txt");
     }else{
-        instance_graph.txt_read("../data/simple_iterative_tests.txt");
+        instance_graph.txt_read(data_path);
+        V = instance_graph.size();
+        for (int i = 0; i < V; ++i) E += instance_graph[i].size();
     }
     // 通过 instance_graph 生成 CSR_graph
     LDBC<weight_type> graph(V);
@@ -269,11 +274,8 @@ int main () {
     // init cpu_generation
     hop_constrained_two_hop_labels_generation_init(instance_graph, info_cpu);
 
-    // 分布式图
-    if (use_cd) {
-        generate_Group_CDLP(instance_graph, graph_pool.graph_group, G_max);
-        Distributed_Graph_Num = graph_pool.graph_group.size();
-    } else {
+    // get graph_pool
+    if (use_cd == 0) {
         graph_pool.graph_group.resize(Distributed_Graph_Num);
         int Nodes_Per_Graph = (V - 1) / Distributed_Graph_Num + 1;
         for (int i = 0; i < Distributed_Graph_Num; ++ i) {
@@ -282,6 +284,10 @@ int main () {
                 graph_pool.graph_group[i].push_back(j);
             }
         }
+        G_max = V / Distributed_Graph_Num + 1;
+    } else {
+        generate_Group_CDLP(instance_graph, graph_pool.graph_group, G_max);
+        Distributed_Graph_Num = graph_pool.graph_group.size();
     }
 
     cudaMallocManaged(&info_gpu->nid, sizeof(int*) * Distributed_Graph_Num);
@@ -294,14 +300,15 @@ int main () {
         }
     }
     
-    for (int j = 0; j < Distributed_Graph_Num; ++ j) {
-        printf("graph size: %d !\n", graph_pool.graph_group[j].size());
-        // for (int k = 0; k < graph_pool.graph_group[j].size(); ++k) {
-        //     printf("%d ", graph_pool.graph_group[j][k]);
-        // }
-        // printf("\n\n");
-    }
-    
+    // for (int j = 0; j < Distributed_Graph_Num; ++ j) {
+    //     printf("graph size: %d !\n", graph_pool.graph_group[j].size());
+    //     // for (int k = 0; k < graph_pool.graph_group[j].size(); ++k) {
+    //     //     printf("%d ", graph_pool.graph_group[j][k]);
+    //     // }
+    //     // printf("\n\n");
+    // }
+    printf("G_max: %d\n",G_max);
+
     // distributed cpu gpu generation
     // auto begin = std::chrono::high_resolution_clock::now();
     // std::thread thread_cpu (cosumer_cpu);
