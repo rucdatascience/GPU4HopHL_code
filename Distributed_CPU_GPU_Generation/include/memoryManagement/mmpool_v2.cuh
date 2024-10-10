@@ -124,7 +124,7 @@ template <typename T> __device__ bool mmpool_v2<T>::push_node(const int &block_i
     // __threadfence_system();
     // atomicSub(&(blocks_state[block_idx]), 1);
     blocks_state[block_idx]--;
-    __threadfence_system();
+    // __threadfence_system();
     
 }
 

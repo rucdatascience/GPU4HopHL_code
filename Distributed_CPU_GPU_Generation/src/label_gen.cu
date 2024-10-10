@@ -54,8 +54,8 @@ cuda_vector_v2<hub_type> *L_gpu, int thread_num, int tidd, int* LT_push_back, in
         // 添加标签并压入 T 队列
         // 表示第 v 个 L 需要 push_back 一个 sv 的并且距离为 dv 的元素。
         // L[i * thread_num + j] = 
-
-        LT_push_back[v * thread_num + tidd] = dv;
+        atomicExch(&LT_push_back[v * thread_num + tidd], dv);
+        // LT_push_back[v * thread_num + tidd] = dv;
 
         // 表示第 tidd 个 T 需要 push_back 一个 v 的并且距离为 dv 的元素。
         // T_push_back[tidd * V + v] = dv;
@@ -404,6 +404,7 @@ cuda_vector_v2<T_item> *T0, int start_id, int end_id, int* LT_push_back, int *d,
                 weight_type d_hash = das->get(v);
                 if (d_hash == 1e9) {
                     d[d_end ++] = v;
+                    // atomicAdd(&d_end, 1);
                     das->modify(v, dv);
                 }else{
                     if (d_hash > dv) {
@@ -416,7 +417,7 @@ cuda_vector_v2<T_item> *T0, int start_id, int end_id, int* LT_push_back, int *d,
     }
     cudaDeviceSynchronize();
     // u, v, d_size, hash, label, t, hop, hop_cst;
-    if (d_end - d_start > 0){
+    if (d_end - d_start > 0) {
         query_parallel <<< (d_end - d_start + 127) / 128, 128 >>>
         (node_id, d_start, d_end - d_start, das, d, has, L_gpu, thread_num, tid, LT_push_back, hop_now, hop_cst);
         cudaDeviceSynchronize();
@@ -615,7 +616,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
         // cudaEventElapsedTime(&elapsedTime, start, stop);
         // printf("Time generation in hop %d : %.8lf s\n", iter, elapsedTime / 1000.0);
     }
-    printf("time 1, 2, 3, 4: %lf, %lf, %lf, %lf \n", time1, time2, time3, time4);
+    printf("time 1, 2, 3, 4: %.5lf, %.5lf, %.5lf, %.5lf \n", time1, time2, time3, time4);
 
     err = cudaGetLastError(); // 检查内核内存申请错误
     if (err != cudaSuccess) {

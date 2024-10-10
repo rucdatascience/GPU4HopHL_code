@@ -209,9 +209,11 @@ int main () {
     int iteration_source_times = 1000, iteration_terminal_times = 1000;
 
     // ÑùÀýÍ¼²ÎÊý
-    int V = 200000, E = 1000000;
-    int Distributed_Graph_Num = 120;
-    int G_max = V / Distributed_Graph_Num + 1;
+    int V = 30855, E = 577873;
+    // int Distributed_Graph_Num = 60;
+    // int G_max = V / Distributed_Graph_Num + 1;
+    int G_max = 1000;
+    int Distributed_Graph_Num = (V + G_max - 1) / G_max;
 
     // G_max = 1;
     int CPU_Num = 1, GPU_Num = 4;
@@ -238,7 +240,7 @@ int main () {
     info_gpu->use_d_optimization = 1;
     printf("init gpu_info successful!\n");
     
-    /* test parameters */
+    // test parameters
     int generate_new_graph = 1;
     int print_details = 1;
     int check_correctness_gpu = 1;
@@ -404,6 +406,7 @@ int main () {
         Executive_Core x = pq.top();
         pq.pop();
         time_generate_labels_total = max(time_generate_labels_total, x.time_generation);
+        printf("time_generate_labels_total: %.6lf\n", time_generate_labels_total);
     }
 
     double label_size_gpu = 0;

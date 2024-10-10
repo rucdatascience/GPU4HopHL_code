@@ -55,7 +55,7 @@ public:
         // 第一个内存池用来存 label
         cudaMallocManaged(&mmpool_labels, sizeof(mmpool_v2<hub_type>));
         cudaDeviceSynchronize();
-        new (mmpool_labels) mmpool_v2<hub_type> (V, (long long) G_max * V * (hop_cst) / 2 / nodes_per_block);
+        new (mmpool_labels) mmpool_v2<hub_type> (V, max((long long)V, (long long) G_max * V * (hop_cst) / 2 / nodes_per_block));
         cudaDeviceSynchronize();
 
         // 第二个内存池用来存 T0
