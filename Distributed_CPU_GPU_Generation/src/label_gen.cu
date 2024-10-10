@@ -65,7 +65,7 @@ cuda_vector_v2<hub_type> *L_gpu, int thread_num, int tidd, int* LT_push_back, in
 }
 
 // 通过 L_push_back 插入到 Lable 中
-__global__ void Push_Back_L (int V, int thread_num, int start_id, int end_id, int hop, int* LT_push_back, cuda_vector_v2<hub_type> *L_gpu, int *nid) {
+__global__ void Push_Back_L (int V, int thread_num, int start_id, int end_id, int hop, int* LT_push_back, cuda_vector_v2<hub_type> *L_gpu, int *nid, int *Num_T) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < 0 || tid >= V) {
         return;
@@ -76,6 +76,8 @@ __global__ void Push_Back_L (int V, int thread_num, int start_id, int end_id, in
         if (LT_push_back[i] != 0) {
             L_gpu[tid].push_back({start_id + i - st, hop, LT_push_back[i]});
             // L_push_back[i] = 0;
+            atomicAdd(&Num_T[i % thread_num], 1);
+            // T_push_back[];
         }
     }
     L_gpu[tid].last_size = L_gpu[tid].current_size;
@@ -471,6 +473,8 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     cuda_hashTable_v2<weight_type> *D_hash = info->D_hash;
     int *D_vector = info->D_vector;
     int *LT_push_back = info->LT_push_back;
+
+    int *Num_T = info->Num_T; // 测试用
     // 编号越小的点，rank 越高
     // for (int i = 0; i < V; i ++){
     //     printf("degree %d, %d\n", i, out_pointer[i + 1] - out_pointer[i]);
@@ -558,7 +562,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
                 
                 // push_back L
                 start_time = clock();
-                Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid);
+                Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid, Num_T);
                 cudaDeviceSynchronize();
                 end_time = clock();
                 time2 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
@@ -583,7 +587,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 
                 // push_back L
                 start_time = clock();
-                Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid);
+                Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid, Num_T);
                 cudaDeviceSynchronize();
                 end_time = clock();
                 time2 += (double)(end_time - start_time) / CLOCKS_PER_SEC;

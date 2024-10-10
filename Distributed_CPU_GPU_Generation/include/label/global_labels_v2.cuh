@@ -28,6 +28,8 @@ public:
     int *D_vector;
     int *LT_push_back;
     // int *T_push_back;
+    
+    int *Num_T; // Num_T, 测试使用
 
     /*hop bounded*/
     int thread_num = 1;
@@ -126,6 +128,9 @@ public:
         if (err != cudaSuccess) {
             printf("init cuda error !: %s\n", cudaGetErrorString(err));
         }
+
+        cudaMallocManaged(&Num_T, (long long)sizeof(int) * G_max);
+        cudaDeviceSynchronize();
     }
 
     // label 中的点数

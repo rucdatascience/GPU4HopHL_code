@@ -13,7 +13,7 @@ void graph_v_of_v_hop_constrained_shortest_distance(graph_v_of_v<T>& instance_gr
 
 	distance.resize(N); // distance.resize(N, std::numeric_limits<T>::max()) does not work here, since the type of the second parametter of resize should be specified
 	for (int i = 0; i < N; i++) {
-		distance[i] = 1e9;
+		distance[i] = std::numeric_limits<int>::max();
 	}
 	distance[source] = 0;
 

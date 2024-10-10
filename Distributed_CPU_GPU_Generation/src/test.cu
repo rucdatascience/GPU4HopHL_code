@@ -45,14 +45,14 @@ inline bool operator < (Executive_Core a, Executive_Core b) {
 int hop_constrained_extract_distance(vector<vector<hub_type>> &L, int source, int terminal, int hop_cst) {
 	/*return std::numeric_limits<int>::max() is not connected*/
 	if (hop_cst < 0) {
-		return 1e9;
+		return std::numeric_limits<int>::max();
 	}
 	if (source == terminal) {
 		return 0;
 	} else if (hop_cst == 0) {
-		return 1e9;
+		return std::numeric_limits<int>::max();
 	}
-	long long int distance = 1e9;
+	long long int distance = std::numeric_limits<int>::max();
 	auto vector1_check_pointer = L[source].begin();
 	auto vector2_check_pointer = L[terminal].begin();
 	auto pointer_L_s_end = L[source].end(), pointer_L_t_end = L[terminal].end();
@@ -210,7 +210,7 @@ int main () {
 
     // ÑùÀıÍ¼²ÎÊı
     int V = 30855, E = 577873;
-    // int Distributed_Graph_Num = 60;
+    // int Distributed_Graph_Num = 30;
     // int G_max = V / Distributed_Graph_Num + 1;
     int G_max = 1000;
     int Distributed_Graph_Num = (V + G_max - 1) / G_max;
