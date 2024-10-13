@@ -19,7 +19,7 @@
 
 #include <vgroup/CDLP_group.cuh>
 
-vector<vector<hub_type> > L;
+vector<vector<hub_type_v2> > L;
 vector<vector<hub_type> > L_gpu, L_cpu;
 
 hop_constrained_case_info info_cpu;
@@ -29,7 +29,7 @@ graph_v_of_v<int> instance_graph;
 CSR_graph<weight_type> csr_graph;
 Graph_pool<int> graph_pool;
 
-boost::random::mt19937 boost_random_time_seed{static_cast<std::uint32_t>(std::time(0))}; // 随机种子 
+boost::random::mt19937 boost_random_time_seed { static_cast<std::uint32_t>(std::time(0)) }; // 随机种子 
 
 struct Executive_Core {
     int id;
@@ -40,55 +40,6 @@ struct Executive_Core {
 inline bool operator < (Executive_Core a, Executive_Core b) {
     if (a.time_generation == b.time_generation) return a.id > b.id;
     return a.time_generation > b.time_generation;
-}
-
-int hop_constrained_extract_distance(vector<vector<hub_type>> &L, int source, int terminal, int hop_cst) {
-	/*return std::numeric_limits<int>::max() is not connected*/
-	if (hop_cst < 0) {
-		return std::numeric_limits<int>::max();
-	}
-	if (source == terminal) {
-		return 0;
-	} else if (hop_cst == 0) {
-		return std::numeric_limits<int>::max();
-	}
-	long long int distance = std::numeric_limits<int>::max();
-	auto vector1_check_pointer = L[source].begin();
-	auto vector2_check_pointer = L[terminal].begin();
-	auto pointer_L_s_end = L[source].end(), pointer_L_t_end = L[terminal].end();
-
-	while (vector1_check_pointer != pointer_L_s_end && vector2_check_pointer != pointer_L_t_end) {
-		if (vector1_check_pointer->hub_vertex == vector2_check_pointer->hub_vertex) {
-			auto vector1_end = vector1_check_pointer;
-			while (vector1_check_pointer->hub_vertex == vector1_end->hub_vertex && vector1_end != pointer_L_s_end) {
-				vector1_end++;
-			}
-			auto vector2_end = vector2_check_pointer;
-			while (vector2_check_pointer->hub_vertex == vector2_end->hub_vertex && vector2_end != pointer_L_t_end) {
-				vector2_end++;
-			}
-
-			for (auto vector1_begin = vector1_check_pointer; vector1_begin != vector1_end; vector1_begin++) {
-				for (auto vector2_begin = vector2_check_pointer; vector2_begin != vector2_end; vector2_begin++) {
-					if (vector1_begin->hop + vector2_begin->hop <= hop_cst) {
-						long long int dis = (long long int)vector1_begin->distance + vector2_begin->distance;
-						if (distance > dis) {
-							distance = dis;
-						}
-					} else {
-						break;
-					}
-				}
-			}
-			vector1_check_pointer = vector1_end;
-			vector2_check_pointer = vector2_end;
-		} else if (vector1_check_pointer->hub_vertex > vector2_check_pointer->hub_vertex) {
-			vector2_check_pointer++;
-		} else {
-			vector1_check_pointer++;
-		}
-	}
-	return distance;
 }
 
 bool compare_hop_constrained_two_hop_label_v2 (hub_type &i, hub_type &j) {
@@ -159,7 +110,7 @@ void query_mindis_with_hub_host (int V, int x, int y, int hop_cst,
     }
 }
 
-void GPU_HSDL_checker (vector<vector<hub_type> >&LL, graph_v_of_v<int> &instance_graph,
+void GPU_HSDL_checker (vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &instance_graph,
                         int iteration_source_times, int iteration_terminal_times, int hop_bounded) {
 
     boost::random::uniform_int_distribution<> vertex_range{ static_cast<int>(0), static_cast<int>(instance_graph.size() - 1) };
@@ -189,7 +140,7 @@ void GPU_HSDL_checker (vector<vector<hub_type> >&LL, graph_v_of_v<int> &instance
                     cout << fixed << setprecision(5) << "distances[terminal] = " << distances[terminal] << endl;
                     cout << endl;
                     exit(0);
-                }else{
+                }else if (distances[terminal] != std::numeric_limits<int>::max()) {
                     // cout << "correct !!!" << endl;
                     // cout << "source, terminal, hopcst = " << source << ", "<< terminal << ", " << hop_cst << endl;
                     // cout << fixed << setprecision(5) << "dis = " << q_dis << endl;
@@ -209,11 +160,11 @@ int main () {
     int iteration_source_times = 1000, iteration_terminal_times = 1000;
 
     // 样例图参数
-    int V = 30855, E = 577873;
-    // int Distributed_Graph_Num = 30;
-    // int G_max = V / Distributed_Graph_Num + 1;
-    int G_max = 1000;
-    int Distributed_Graph_Num = (V + G_max - 1) / G_max;
+    int V = 200000, E = 1000000;
+    int Distributed_Graph_Num = 200;
+    int G_max = V / Distributed_Graph_Num + 1;
+    // int G_max = 1000;
+    // int Distributed_Graph_Num = (V + G_max - 1) / G_max;
 
     // G_max = 1;
     int CPU_Num = 1, GPU_Num = 4;
@@ -395,7 +346,7 @@ int main () {
     }
 
     for (int v_k = 0; v_k < V; ++ v_k) {
-        sort(L[v_k].begin(), L[v_k].end(), compare_hop_constrained_two_hop_label_v2);
+        sort(L[v_k].begin(), L[v_k].end(), compare_hop_constrained_two_hop_label);
     }
 
     if (check_correctness) {

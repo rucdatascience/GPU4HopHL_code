@@ -1,6 +1,8 @@
+#ifndef HOP_CONSTRAINED_TWO_HOP_LABELS_GENERATION_H
+#define HOP_CONSTRAINED_TWO_HOP_LABELS_GENERATION_H
 #pragma once
+
 #include <HBPLL/hop_constrained_two_hop_labels.h>
-// #include <HBPLL/two_hop_labels.h>
 #include <boost/heap/fibonacci_heap.hpp>
 #include <graph_v_of_v/graph_v_of_v.h>
 #include <shared_mutex>
@@ -568,7 +570,7 @@ void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, 
 			// if (global_use_2M_prune && is_mock[v_k]) {
 			//	continue;
 			// }
-			results.emplace_back(pool.enqueue([v_k]{HSDL_thread_function(v_k); return 1;}));
+			results.emplace_back(pool.enqueue([v_k] {HSDL_thread_function(v_k); return 1;}));
 		}
 	}
 	for (auto &&result : results)
@@ -645,7 +647,7 @@ void hop_constrained_two_hop_labels_generation_init(graph_v_of_v<int> &input_gra
 	}
 }
 
-void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info, vector<vector<hub_type> >&L, vector<int> &nid_vec) {
+void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info, vector<vector<hub_type_v2> >&L, vector<int> &nid_vec) {
 
 	// ----------------------------------- step 1: initialization -----------------------------------
 	auto begin = std::chrono::high_resolution_clock::now();
@@ -685,20 +687,40 @@ void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, 
 	for (auto &&result : results) {
 		result.get();
 	}
-	
+	results.clear();
+
 	end = std::chrono::high_resolution_clock::now();
 	case_info.time_generate_labels += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9; // s
 
+	// Tranverse
 	begin = std::chrono::high_resolution_clock::now();
+
+	// for (int v_k = 0; v_k < V; ++ v_k) {
+	// 	results.emplace_back(pool.enqueue([v_k, &L]{
+	// 		// for (int j = 0; j < L_temp_599[v_k].size(); ++ j) {
+	// 		// 	hop_constrained_two_hop_label x = L_temp_599[v_k][j];
+	// 		// 	L[v_k].push_back({x.hub_vertex, 0, x.hop, x.distance});
+	// 		// }
+	// 		L[v_k].insert(L[v_k].end(), L_temp_599[v_k].begin(), L_temp_599[v_k].end());
+	// 		L_temp_599[v_k].clear();
+	// 		return 1;
+	// 	}));
+	// }
+	// for (auto &&result : results) {
+	// 	result.get();
+	// }
+	// results.clear();
+
 	hop_constrained_two_hop_label x;
 	for (int v_k = 0; v_k < V; ++ v_k) {
-		for (int j = 0; j < L_temp_599[v_k].size(); ++ j) {
-			hop_constrained_two_hop_label x = L_temp_599[v_k][j];
-			L[v_k].push_back({x.hub_vertex, x.hop, x.distance});
-		}
+		// for (int j = L_temp_599[v_k].size() - 1; j >= 0; -- j) {
+		// 	x = L_temp_599[v_k][j];
+		// 	L[v_k].push_back({x.hub_vertex, 0, x.hop, x.distance});
+		// }
+		L[v_k].insert(L[v_k].end(), L_temp_599[v_k].begin(), L_temp_599[v_k].end());
 		L_temp_599[v_k].clear();
 	}
-	
+
 	end = std::chrono::high_resolution_clock::now();
 	case_info.time_traverse += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9; // s
 
@@ -707,3 +729,5 @@ void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, 
 	end = std::chrono::high_resolution_clock::now();
 	case_info.time_clear += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9; // s
 }
+
+#endif // HOP_CONSTRAINED_TWO_HOP_LABELS_GENERATION_H

@@ -4,17 +4,17 @@
 
 #include "definition/hub_def.h"
 #include <label/hop_constrained_two_hop_labels_v2.cuh>
+
 /* label format */
 class hop_constrained_two_hop_label
 {
 public:
 	int hub_vertex, parent_vertex, hop, distance;
 
-	hop_constrained_two_hop_label(int hv, int pv, int h, int d) : hub_vertex(hv), parent_vertex(pv), hop(h), distance(d) {}
+	hop_constrained_two_hop_label (int hv, int pv, int h, int d) : hub_vertex(hv), parent_vertex(pv), hop(h), distance(d) {}
 	hop_constrained_two_hop_label() {}
 	// copy
-	hop_constrained_two_hop_label(const hop_constrained_two_hop_label &other)
-	{
+	hop_constrained_two_hop_label (const hop_constrained_two_hop_label &other) {
 		hub_vertex = other.hub_vertex;
 		parent_vertex = other.parent_vertex;
 		hop = other.hop;
@@ -23,38 +23,47 @@ public:
 };
 
 // 定义哈希函数
-namespace std
-{
+namespace std {
 	template <>
-	struct hash<hop_constrained_two_hop_label>
-	{
-		size_t operator()(const hop_constrained_two_hop_label &label) const
-		{
+	struct hash<hop_constrained_two_hop_label>{
+		size_t operator()(const hop_constrained_two_hop_label &label) const {
 			return hash<int>()(label.hub_vertex) ^ (hash<int>()(label.parent_vertex) << 1) ^ (hash<int>()(label.hop) << 2) ^ (hash<int>()(label.distance) << 3);
 		}
 	};
 } // namespace std
 
 // 定义等价性比较操作符
-bool operator==(const hop_constrained_two_hop_label &lhs, const hop_constrained_two_hop_label &rhs)
-{
+inline bool operator == (const hop_constrained_two_hop_label &lhs, const hop_constrained_two_hop_label &rhs) {
 	return lhs.hub_vertex == rhs.hub_vertex && lhs.parent_vertex == rhs.parent_vertex && lhs.hop == rhs.hop && lhs.distance == rhs.distance;
 }
 
-bool operator<(hop_constrained_two_hop_label const &x, hop_constrained_two_hop_label const &y)
-{
-	if (x.distance != y.distance)
-	{
+inline bool operator < (hop_constrained_two_hop_label const &x, hop_constrained_two_hop_label const &y) {
+	if (x.distance != y.distance) {
 		return x.distance > y.distance; // < is the max-heap; > is the min heap
-	}
-	else
-	{
+	} else {
 		return x.hop > y.hop; // < is the max-heap; > is the min heap
 	}
+	// if (x.hub_vertex != y.hub_vertex) {
+	// 	return x.hub_vertex < y.hub_vertex;
+	// } else if (x.hop != y.hop) {
+	// 	return x.hop < y.hop;
+	// } else {
+	// 	return x.distance < y.distance;
+	// }
 }
 
-class hop_constrained_case_info
-{
+/*sortL*/
+// inline bool compare_hop_constrained_two_hop_label(hop_constrained_two_hop_label &i, hop_constrained_two_hop_label &j) {
+// 	if (i.hub_vertex != j.hub_vertex) {
+// 		return i.hub_vertex < j.hub_vertex;
+// 	} else if (i.hop != j.hop) {
+// 		return i.hop < j.hop;
+// 	} else {
+// 		return i.distance < j.distance;
+// 	}
+// }
+
+class hop_constrained_case_info {
 public:
 	/*hop bounded*/
 	int thread_num = 1;
@@ -82,38 +91,30 @@ public:
 
 	double label_size_before_canonical_repair, label_size_after_canonical_repair, canonical_repair_remove_label_ratio;
 
-	void compute_label_size_per_node(int V)
-	{
-		for (auto &xx : L)
-		{
+	void compute_label_size_per_node(int V) {
+		for (auto &xx : L) {
 			label_size = label_size + xx.size();
 		}
 		label_size = label_size / (double) V;
 	}
 
-	long long int compute_label_bit_size()
-	{
+	long long int compute_label_bit_size() {
 		long long int size = 0;
-		for (auto &xx : L)
-		{
+		for (auto &xx : L) {
 			size = size + xx.size() * sizeof(hop_constrained_two_hop_label);
 		}
 		return size;
 	}
 
 	/*clear labels*/
-	void clear_labels()
-	{
+	void clear_labels() {
 		vector<vector<hop_constrained_two_hop_label>>().swap(L);
 	}
 
-	void print_L()
-	{
+	void print_L() {
 		cout << "print_L: (hub_vertex, hop, distance, parent_vertex)" << endl;
-		for (auto &xx : L)
-		{
-			for (auto &yy : xx)
-			{
+		for (auto &xx : L) {
+			for (auto &yy : xx) {
 				cout << "(" << yy.hub_vertex << "," << yy.hop << "," << yy.distance << "," << yy.parent_vertex << ") ";
 			}
 			cout << endl;
@@ -121,8 +122,7 @@ public:
 	}
 
 	/*record_all_details*/
-	void record_all_details(string save_name)
-	{
+	void record_all_details(string save_name) {
 		ofstream outputFile;
 		outputFile.precision(6);
 		outputFile.setf(ios::fixed);
@@ -155,21 +155,16 @@ public:
 	}
 };
 
-int hop_constrained_extract_distance(vector<vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst)
-{
+inline int hop_constrained_extract_distance(vector<vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst) {
 
 	/*return std::numeric_limits<int>::max() is not connected*/
 
-	if (hop_cst < 0)
-	{
+	if (hop_cst < 0) {
 		return std::numeric_limits<int>::max();
 	}
-	if (source == terminal)
-	{
+	if (source == terminal) {
 		return 0;
-	}
-	else if (hop_cst == 0)
-	{
+	} else if (hop_cst == 0) {
 		return std::numeric_limits<int>::max();
 	}
 
@@ -178,42 +173,33 @@ int hop_constrained_extract_distance(vector<vector<hop_constrained_two_hop_label
 	auto vector2_check_pointer = L[terminal].begin();
 	auto pointer_L_s_end = L[source].end(), pointer_L_t_end = L[terminal].end();
 
-	while (vector1_check_pointer != pointer_L_s_end && vector2_check_pointer != pointer_L_t_end)
-	{
-		if (vector1_check_pointer->hub_vertex == vector2_check_pointer->hub_vertex)
-		{
+	while (vector1_check_pointer != pointer_L_s_end && vector2_check_pointer != pointer_L_t_end) {
+		
+		if (vector1_check_pointer->hub_vertex == vector2_check_pointer->hub_vertex) {
 
 			auto vector1_end = vector1_check_pointer;
-			while (vector1_check_pointer->hub_vertex == vector1_end->hub_vertex && vector1_end != pointer_L_s_end)
-			{
+			while (vector1_check_pointer->hub_vertex == vector1_end->hub_vertex && vector1_end != pointer_L_s_end) {
 				vector1_end++;
 			}
 			auto vector2_end = vector2_check_pointer;
-			while (vector2_check_pointer->hub_vertex == vector2_end->hub_vertex && vector2_end != pointer_L_t_end)
-			{
+			while (vector2_check_pointer->hub_vertex == vector2_end->hub_vertex && vector2_end != pointer_L_t_end) {
 				vector2_end++;
 			}
 
-			for (auto vector1_begin = vector1_check_pointer; vector1_begin != vector1_end; vector1_begin++)
-			{
+			for (auto vector1_begin = vector1_check_pointer; vector1_begin != vector1_end; vector1_begin++) {
 				// cout << "x (" << vector1_begin->hub_vertex << "," <<
 				// vector1_begin->hop << "," << vector1_begin->distance << "," <<
 				// vector1_begin->parent_vertex << ") " << endl;
-				for (auto vector2_begin = vector2_check_pointer; vector2_begin != vector2_end; vector2_begin++)
-				{
+				for (auto vector2_begin = vector2_check_pointer; vector2_begin != vector2_end; vector2_begin++) {
 					// cout << "y (" << vector2_begin->hub_vertex << "," <<
 					// vector2_begin->hop << "," << vector2_begin->distance << "," <<
 					// vector2_begin->parent_vertex << ") " << endl;
-					if (vector1_begin->hop + vector2_begin->hop <= hop_cst)
-					{
+					if (vector1_begin->hop + vector2_begin->hop <= hop_cst) {
 						long long int dis = (long long int)vector1_begin->distance + vector2_begin->distance;
-						if (distance > dis)
-						{
+						if (distance > dis) {
 							distance = dis;
 						}
-					}
-					else
-					{
+					} else {
 						break;
 					}
 				}
@@ -221,13 +207,9 @@ int hop_constrained_extract_distance(vector<vector<hop_constrained_two_hop_label
 
 			vector1_check_pointer = vector1_end;
 			vector2_check_pointer = vector2_end;
-		}
-		else if (vector1_check_pointer->hub_vertex > vector2_check_pointer->hub_vertex)
-		{
+		} else if (vector1_check_pointer->hub_vertex > vector2_check_pointer->hub_vertex) {
 			vector2_check_pointer++;
-		}
-		else
-		{
+		} else {
 			vector1_check_pointer++;
 		}
 	}
@@ -235,13 +217,11 @@ int hop_constrained_extract_distance(vector<vector<hop_constrained_two_hop_label
 	return distance;
 }
 
-vector<pair<int, int>> hop_constrained_extract_shortest_path(vector<vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst)
-{
+inline vector<pair<int, int>> hop_constrained_extract_shortest_path(vector<vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst) {
 
 	vector<pair<int, int>> paths;
 
-	if (source == terminal)
-	{
+	if (source == terminal) {
 		return paths;
 	}
 
@@ -254,38 +234,28 @@ vector<pair<int, int>> hop_constrained_extract_shortest_path(vector<vector<hop_c
 	auto vector2_check_pointer = L[terminal].begin();
 	auto pointer_L_s_end = L[source].end(), pointer_L_t_end = L[terminal].end();
 
-	while (vector1_check_pointer != pointer_L_s_end && vector2_check_pointer != pointer_L_t_end)
-	{
-		if (vector1_check_pointer->hub_vertex == vector2_check_pointer->hub_vertex)
-		{
+	while (vector1_check_pointer != pointer_L_s_end && vector2_check_pointer != pointer_L_t_end) {
+		if (vector1_check_pointer->hub_vertex == vector2_check_pointer->hub_vertex) {
 
 			auto vector1_end = vector1_check_pointer;
-			while (vector1_check_pointer->hub_vertex == vector1_end->hub_vertex && vector1_end != pointer_L_s_end)
-			{
+			while (vector1_check_pointer->hub_vertex == vector1_end->hub_vertex && vector1_end != pointer_L_s_end) {
 				vector1_end++;
 			}
 			auto vector2_end = vector2_check_pointer;
-			while (vector2_check_pointer->hub_vertex == vector2_end->hub_vertex && vector2_end != pointer_L_t_end)
-			{
+			while (vector2_check_pointer->hub_vertex == vector2_end->hub_vertex && vector2_end != pointer_L_t_end) {
 				vector2_end++;
 			}
 
-			for (auto vector1_begin = vector1_check_pointer; vector1_begin != vector1_end; vector1_begin++)
-			{
-				for (auto vector2_begin = vector2_check_pointer; vector2_begin != vector2_end; vector2_begin++)
-				{
-					if (vector2_begin->hop + vector1_begin->hop <= hop_cst)
-					{
+			for (auto vector1_begin = vector1_check_pointer; vector1_begin != vector1_end; vector1_begin++) {
+				for (auto vector2_begin = vector2_check_pointer; vector2_begin != vector2_end; vector2_begin++) {
+					if (vector2_begin->hop + vector1_begin->hop <= hop_cst) {
 						long long int dis = (long long int)vector1_begin->distance + vector2_begin->distance;
-						if (distance > dis)
-						{
+						if (distance > dis) {
 							distance = dis;
 							vector1_capped_v_parent = vector1_begin->parent_vertex;
 							vector2_capped_v_parent = vector2_begin->parent_vertex;
 						}
-					}
-					else
-					{
+					} else {
 						break;
 					}
 				}
@@ -293,34 +263,25 @@ vector<pair<int, int>> hop_constrained_extract_shortest_path(vector<vector<hop_c
 
 			vector1_check_pointer = vector1_end;
 			vector2_check_pointer = vector2_end;
-		}
-		else if (vector1_check_pointer->hub_vertex > vector2_check_pointer->hub_vertex)
-		{
+		} else if (vector1_check_pointer->hub_vertex > vector2_check_pointer->hub_vertex) {
 			vector2_check_pointer++;
-		}
-		else
-		{
+		} else {
 			vector1_check_pointer++;
 		}
 	}
 
-	if (distance < std::numeric_limits<int>::max())
-	{ // connected
-		if (source != vector1_capped_v_parent)
-		{
+	if (distance < std::numeric_limits<int>::max()) { // connected
+		if (source != vector1_capped_v_parent) {
 			paths.push_back({source, vector1_capped_v_parent});
 			source = vector1_capped_v_parent;
 			hop_cst--;
 		}
-		if (terminal != vector2_capped_v_parent)
-		{
+		if (terminal != vector2_capped_v_parent) {
 			paths.push_back({terminal, vector2_capped_v_parent});
 			terminal = vector2_capped_v_parent;
 			hop_cst--;
 		}
-	}
-	else
-	{
+	} else {
 		return paths;
 	}
 

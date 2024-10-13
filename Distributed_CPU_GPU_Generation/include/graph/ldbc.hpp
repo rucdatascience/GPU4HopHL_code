@@ -83,8 +83,6 @@ public:
 	std::vector<std::string> vertex_id_to_str; // vertex_id_to_str[vertex_id] = vertex_name
 	std::string vertex_file, edge_file;
 
-	
-	
 };
 
 

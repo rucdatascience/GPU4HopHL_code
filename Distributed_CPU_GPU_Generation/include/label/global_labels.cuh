@@ -1,20 +1,23 @@
 #ifndef GLOBAL_LABELS_CUH
 #define GLOBAL_LABELS_CUH
+#pragma once
 
+// #include <HBPLL/hop_constrained_two_hop_labels.h>
 #include "definition/hub_def.h"
 #include "label/hop_constrained_two_hop_labels_v2.cuh"
 #include "memoryManagement/cuda_hashTable.cuh"
+#include <memoryManagement/cuda_hashtable.cuh>
 #include "memoryManagement/cuda_vector.cuh"
 #include "memoryManagement/mmpool.cuh"
-#include "unordered_map"
-#include <cstddef>
 #include <cuda_runtime.h>
 #include <graph/graph_v_of_v.h>
-#include <memoryManagement/cuda_hashtable.cuh>
+
+#include "unordered_map"
+#include <cstddef>
 #include <unordered_set>
 #include <vector>
-
 #include <queue> // Add this line to include the <queue> header file
+
 using namespace std;
 
 class hop_constrained_case_info {

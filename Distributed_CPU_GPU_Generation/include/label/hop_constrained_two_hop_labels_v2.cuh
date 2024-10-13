@@ -1,7 +1,8 @@
 #ifndef HOP_CONSTRAINED_TWO_HOP_LABELS_V2_H
 #define HOP_CONSTRAINED_TWO_HOP_LABELS_V2_H
-#include "definition/hub_def.h"
 #pragma once
+
+#include "definition/hub_def.h"
 
 #include <cuda_runtime.h>
 #include <fstream>
@@ -16,12 +17,11 @@ struct T_item {
     int vertex;
     weight_type distance;
 
-    __device__ __host__ T_item(int vertex, weight_type distance)
-    : vertex(vertex), distance(distance) {}
+    __device__ __host__ T_item (int vertex, weight_type distance) : vertex(vertex), distance(distance) {}
 
     __device__ __host__ T_item() {}
 
-    T_item(const T_item &other) {
+    T_item (const T_item &other) {
         vertex = other.vertex;
         distance = other.distance;
     }
@@ -33,7 +33,7 @@ struct hop_constrained_two_hop_label_v3 {
     int hub_vertex, hop;
     weight_type distance;
 
-    __device__ __host__ hop_constrained_two_hop_label_v3(int hub_vertex, int hop, weight_type distance)
+    __device__ __host__ hop_constrained_two_hop_label_v3 (int hub_vertex, int hop, weight_type distance)
     : hub_vertex(hub_vertex), hop(hop), distance(distance) {}
 
     __device__ __host__ hop_constrained_two_hop_label_v3() {}
@@ -64,23 +64,23 @@ struct hop_constrained_two_hop_label_v2 {
         hop = other.hop;
         distance = other.distance;
     }
-    __device__ __host__ bool operator <(const hop_constrained_two_hop_label_v2 &y) const {
-        //congregate the same hub_vertex into a continuous block, so we can use segment to find the label
-        if(hub_vertex != y.hub_vertex){
-            return hub_vertex < y.hub_vertex;
-        }
-        if (distance != y.distance) {
-            return distance < y.distance; // < is the max-heap; > is the min heap
-        } else {
-            return hop < y.hop; // < is the max-heap; > is the min heap
-        }
-    }
+    // __device__ __host__ bool operator <(const hop_constrained_two_hop_label_v2 &y) const {
+    //     //congregate the same hub_vertex into a continuous block, so we can use segment to find the label
+    //     if(hub_vertex != y.hub_vertex){
+    //         return hub_vertex < y.hub_vertex;
+    //     }
+    //     if (distance != y.distance) {
+    //         return distance < y.distance; // < is the max-heap; > is the min heap
+    //     } else {
+    //         return hop < y.hop; // < is the max-heap; > is the min heap
+    //     }
+    // }
 
-    __device__ __host__ bool operator ==(const hop_constrained_two_hop_label_v2 &rhs) const{
-        return hub_vertex == rhs.hub_vertex &&
-                parent_vertex == rhs.parent_vertex && hop == rhs.hop &&
-                distance == rhs.distance;
-    }
+    // __device__ __host__ bool operator ==(const hop_constrained_two_hop_label_v2 &rhs) const{
+    //     return hub_vertex == rhs.hub_vertex &&
+    //             parent_vertex == rhs.parent_vertex && hop == rhs.hop &&
+    //             distance == rhs.distance;
+    // }
 };
 
 // ¶¨Òå¹þÏ£º¯Êý

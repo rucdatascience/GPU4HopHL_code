@@ -38,7 +38,7 @@ __device__ int query_dis_by_hash_table
 // u, v, d_size, d_has, d, label, hop, hop_cst;
 // (node_id, d->current_size, das, d, has, L_gpu, t1, hop_now, hop_cst)
 __global__ void query_parallel (int sv, int st, int sz, cuda_hashTable_v2<weight_type> *das, int *d, cuda_hashTable_v2<weight_type> *has,
-cuda_vector_v2<hub_type> *L_gpu, int thread_num, int tidd, int* LT_push_back, int hop_now, int hop_cst) {
+cuda_vector_v2<hub_type> *L_gpu, int thread_num, int tidd, int* LT_push_back, int hop_now, int hop_cst, int *Num_L, int *L_push_back) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (tid < 0 || tid >= sz) {
@@ -50,13 +50,17 @@ cuda_vector_v2<hub_type> *L_gpu, int thread_num, int tidd, int* LT_push_back, in
     weight_type dv = das->get(v);
     weight_type q_dis = query_dis_by_hash_table(sv, v, has, L_gpu + v, hop_now + 1, hop_cst);
     
+    int x;
+    int y = v * thread_num;
     if (dv < q_dis) {
         // 添加标签并压入 T 队列
         // 表示第 v 个 L 需要 push_back 一个 sv 的并且距离为 dv 的元素。
-        // L[i * thread_num + j] = 
-        atomicExch(&LT_push_back[v * thread_num + tidd], dv);
-        // LT_push_back[v * thread_num + tidd] = dv;
-
+        // atomicExch(&LT_push_back[v * thread_num + tidd], dv);
+        // LT_push_back[y + tidd] = dv;
+        
+        x = atomicAdd(&Num_L[v], 1);
+        L_push_back[y + x] = (tidd << 10) + dv;
+        
         // 表示第 tidd 个 T 需要 push_back 一个 v 的并且距离为 dv 的元素。
         // T_push_back[tidd * V + v] = dv;
     }
@@ -65,26 +69,34 @@ cuda_vector_v2<hub_type> *L_gpu, int thread_num, int tidd, int* LT_push_back, in
 }
 
 // 通过 L_push_back 插入到 Lable 中
-__global__ void Push_Back_L (int V, int thread_num, int start_id, int end_id, int hop, int* LT_push_back, cuda_vector_v2<hub_type> *L_gpu, int *nid, int *Num_T) {
+__global__ void Push_Back_L (int V, int thread_num, int start_id, int end_id, int hop, int* LT_push_back, cuda_vector_v2<hub_type> *L_gpu,
+int *nid, int *Num_L, int *L_push_back, int *Num_T, int *T_push_back) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < 0 || tid >= V) {
         return;
     }
     // tid = nid[start_id + tid];
     int st = tid * thread_num;
-    for (int i = st; i < st + thread_num; ++i) {
-        if (LT_push_back[i] != 0) {
-            L_gpu[tid].push_back({start_id + i - st, hop, LT_push_back[i]});
-            // L_push_back[i] = 0;
-            atomicAdd(&Num_T[i % thread_num], 1);
-            // T_push_back[];
-        }
+    int x;
+    for (int i = st; i < st + Num_L[tid]; ++i) {
+        L_gpu[tid].push_back({start_id + (L_push_back[i] >> 10), hop, L_push_back[i] & ((1 << 10) - 1)});
+
+        x = atomicAdd(&Num_T[(L_push_back[i] >> 10)], 1);
+        T_push_back[(L_push_back[i] >> 10) * V + x] = (tid << 10) + (L_push_back[i] & ((1 << 10) - 1));
+        // T_push_back[ + x] = ;
     }
+    // for (int i = st; i < st + thread_num; ++i) {
+    //     if (LT_push_back[i] != 0) {
+    //         L_gpu[tid].push_back({start_id + i - st, hop, LT_push_back[i]});
+    //     }
+    // }
+    Num_L[tid] = 0;
     L_gpu[tid].last_size = L_gpu[tid].current_size;
 }
 
 // 通过 T_push_back 插入到 T 中
-__global__ void Push_Back_T (int V, int thread_num, int start_id, int end_id, int* LT_push_back, cuda_vector_v2<T_item> *T, int *nid) {
+__global__ void Push_Back_T (int V, int thread_num, int start_id, int end_id, int* LT_push_back, cuda_vector_v2<T_item> *T, 
+int *nid, int *Num_T, int *T_push_back) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < 0 || tid >= thread_num) {
         return;
@@ -98,14 +110,21 @@ __global__ void Push_Back_T (int V, int thread_num, int start_id, int end_id, in
     //     }
     // }
     // int st = tid * V;
-    int node_id = nid[start_id + tid];
-    int ed = thread_num * V;
-    for (int i = tid, j = 0; i < ed; i += thread_num, ++j) {
-        if (LT_push_back[i] != 0) {
-            T[start_id + tid].push_back({j, LT_push_back[i]});
-            LT_push_back[i] = 0;
-        }
+    
+    // int ed = thread_num * V;
+    // for (int i = tid, j = 0; i < ed; i += thread_num, ++j) {
+    //     if (LT_push_back[i] != 0) {
+    //         T[start_id + tid].push_back({j, LT_push_back[i]});
+    //         LT_push_back[i] = 0;
+    //     }
+    // }
+    
+    int st = tid * V;
+    for (int i = st; i < st + Num_T[tid]; i++) {
+        T[start_id + tid].push_back({(T_push_back[i] >> 10), T_push_back[i]&((1 << 10) - 1)});
     }
+
+    Num_T[tid] = 0;
 }
 
 // 清空 T
@@ -340,7 +359,7 @@ __global__ void gen_label_hsdl_v2 (int V, int thread_num, int hop_cst, int hop_n
 __global__ void gen_label_hsdl_v3
 (int V, int thread_num, int hop_cst, int hop_now, int* out_pointer, int* out_edge, int* out_edge_weight,
 cuda_vector_v2<hub_type> *L_gpu, cuda_hashTable_v2<weight_type> *Has, cuda_hashTable_v2<weight_type> *Das,
-cuda_vector_v2<T_item> *T0, int start_id, int end_id, int* LT_push_back, int *d, int *nid) {
+cuda_vector_v2<T_item> *T0, int start_id, int end_id, int* LT_push_back, int *d, int *nid, int *Num_L, int *L_push_back) {
     
     // 线程id
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -421,7 +440,8 @@ cuda_vector_v2<T_item> *T0, int start_id, int end_id, int* LT_push_back, int *d,
     // u, v, d_size, hash, label, t, hop, hop_cst;
     if (d_end - d_start > 0) {
         query_parallel <<< (d_end - d_start + 127) / 128, 128 >>>
-        (node_id, d_start, d_end - d_start, das, d, has, L_gpu, thread_num, tid, LT_push_back, hop_now, hop_cst);
+        (node_id, d_start, d_end - d_start, das, d, has, L_gpu, thread_num, tid, LT_push_back, 
+        hop_now, hop_cst, Num_L, L_push_back);
         cudaDeviceSynchronize();
     }
 
@@ -446,7 +466,7 @@ __global__ void add_timer (clock_t* tot, clock_t *t, int thread_num) {
 }
 
 // 生成 label 的过程
-void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v2 *info, vector<vector<hub_type> >&L, vector<int>& nid_vec, int nid_vec_id) {
+void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v2 *info, vector<vector<hub_type_v2> >&L, vector<int>& nid_vec, int nid_vec_id) {
 
     cudaError_t err;
 
@@ -475,6 +495,10 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     int *LT_push_back = info->LT_push_back;
 
     int *Num_T = info->Num_T; // 测试用
+    int *Num_L = info->Num_L; // 测试用
+    int *T_push_back = info->T_push_back;
+    int *L_push_back = info->L_push_back;
+    
     // 编号越小的点，rank 越高
     // for (int i = 0; i < V; i ++){
     //     printf("degree %d, %d\n", i, out_pointer[i + 1] - out_pointer[i]);
@@ -555,14 +579,14 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 
                 start_time = clock();
                 gen_label_hsdl_v3 <<< dimGrid_thread, dimBlock >>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
-                info->L_cuda, L_hash, D_hash, info->T0, start_id, end_id, LT_push_back, D_vector, nid);
+                info->L_cuda, L_hash, D_hash, info->T0, start_id, end_id, LT_push_back, D_vector, nid, Num_L, L_push_back);
                 cudaDeviceSynchronize();
                 end_time = clock();
                 time1 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
                 
                 // push_back L
                 start_time = clock();
-                Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid, Num_T);
+                Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid, Num_L, L_push_back, Num_T, T_push_back);
                 cudaDeviceSynchronize();
                 end_time = clock();
                 time2 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
@@ -571,23 +595,22 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 
                 // push_back T
                 start_time = clock();
-                Push_Back_T <<< dimGrid_thread, dimBlock >>> (V, thread_num, start_id, end_id, LT_push_back, info->T1, nid);
+                Push_Back_T <<< dimGrid_thread, dimBlock >>> (V, thread_num, start_id, end_id, LT_push_back, info->T1, nid, Num_T, T_push_back);
                 cudaDeviceSynchronize();
                 end_time = clock();
                 time3 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
             }else{
                 start_time = clock();
-                gen_label_hsdl_v3 <<< dimGrid_thread, dimBlock >>>
-                (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
-                info->L_cuda, L_hash, D_hash, info->T1, start_id, end_id, LT_push_back, D_vector, nid);
+                gen_label_hsdl_v3 <<< dimGrid_thread, dimBlock >>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
+                info->L_cuda, L_hash, D_hash, info->T1, start_id, end_id, LT_push_back, D_vector, nid, Num_L, L_push_back);
                 cudaDeviceSynchronize();
                 end_time = clock();
                 time1 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
                 // push_back L
                 start_time = clock();
-                Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid, Num_T);
+                Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, LT_push_back, info->L_cuda, nid, Num_L, L_push_back, Num_T, T_push_back);
                 cudaDeviceSynchronize();
                 end_time = clock();
                 time2 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
@@ -596,7 +619,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 
                 // push_back T
                 start_time = clock();
-                Push_Back_T <<< dimGrid_thread, dimBlock >>> (V, thread_num, start_id, end_id, LT_push_back, info->T0, nid);
+                Push_Back_T <<< dimGrid_thread, dimBlock >>> (V, thread_num, start_id, end_id, LT_push_back, info->T0, nid, Num_T, T_push_back);
                 cudaDeviceSynchronize();
                 end_time = clock();
                 time3 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
@@ -640,17 +663,49 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     // printf("hub, parent, hop, dis:\n");
     auto begin = std::chrono::high_resolution_clock::now();
     long long label_size = 0;
+    
+    // ThreadPool pool(100);
+	// std::vector<std::future<int>> results;
+    // for (int v = 0; v < V; ++v) {
+    //     results.emplace_back(pool.enqueue(
+	// 		[v, &L, &nid_vec, info] {
+    //         for (int i = 0; i < info->L_cuda[v].blocks_num; ++i) {
+    //             int block_id = info->L_cuda[v].block_idx_array[i];
+    //             int block_siz = info->L_cuda[v].pool->get_block_size_host(block_id);
+    //             for (int j = 0; j < block_siz; ++j) {
+    //                 hub_type* x = info->L_cuda[v].pool->get_node_host(block_id, j);
+    //                 // L[v].push_back({nid_vec[x->hub_vertex], x->hop, x->distance});
+    //                 L[v].insert(L[v].end(), {nid_vec[x->hub_vertex], 0, x->hop, x->distance});
+    //                 // label_size ++;
+    //             }
+    //         }
+    //         return 1;
+    //     }));
+    // }
+    // for (auto &&result : results)
+	// 	result.get();
+    // results.clear();
+
     for (int v = 0; v < V; ++v) {
         for (int i = 0; i < info->L_cuda[v].blocks_num; ++i) {
             int block_id = info->L_cuda[v].block_idx_array[i];
             int block_siz = info->L_cuda[v].pool->get_block_size_host(block_id);
             for (int j = 0; j < block_siz; ++j) {
                 hub_type* x = info->L_cuda[v].pool->get_node_host(block_id, j);
-                L[v].push_back({nid_vec[x->hub_vertex], x->hop, x->distance});
+                // L[v].push_back({nid_vec[x->hub_vertex], 0, x->hop, x->distance});
+                L[v].insert(L[v].end(), {nid_vec[x->hub_vertex], 0, x->hop, x->distance});
                 label_size ++;
             }
         }
     }
+
+    //printf Num_L
+    // for (int v = V / 100 * 99; v < V; ++v) {
+    //     printf("%d ", Num_L[v]);
+    //     Num_L[v] = 0;
+    // }
+    // puts("");
+    
     auto end = std::chrono::high_resolution_clock::now();
     printf("Time traverse: %6lf\n", std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9);
     info->time_traverse_labels += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;

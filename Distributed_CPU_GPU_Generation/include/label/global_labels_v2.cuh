@@ -30,6 +30,9 @@ public:
     // int *T_push_back;
     
     int *Num_T; // Num_T, 测试使用
+    int *Num_L;
+    int *T_push_back;
+    int *L_push_back;
 
     /*hop bounded*/
     int thread_num = 1;
@@ -124,13 +127,20 @@ public:
         // 同步，保证所有 malloc 完成。
         cudaDeviceSynchronize();
 
+        cudaMallocManaged(&Num_T, (long long) sizeof(int) * V);
+        cudaDeviceSynchronize();
+        cudaMallocManaged(&T_push_back, (long long) thread_num * V * sizeof(int));
+        cudaDeviceSynchronize();
+
+        cudaMallocManaged(&Num_L, (long long) sizeof(int) * V);
+        cudaDeviceSynchronize();
+        cudaMallocManaged(&L_push_back, (long long) thread_num * V * sizeof(int));
+        cudaDeviceSynchronize();
+
         err = cudaGetLastError(); // 检查内核内存申请错误
         if (err != cudaSuccess) {
             printf("init cuda error !: %s\n", cudaGetErrorString(err));
         }
-
-        cudaMallocManaged(&Num_T, (long long)sizeof(int) * G_max);
-        cudaDeviceSynchronize();
     }
 
     // label 中的点数
