@@ -10,7 +10,7 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 --generate-code=arch=compute_86,co
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build/bin)
 include_directories(include  ${CUDA_INCLUDE_DIRS} )
-include_directories("/home/mdnd/boost_1_85_0" )
+#include_directories("/home/mdnd/boost_1_85_0" )
 aux_source_directory(src DIR_SRCS)
 
 add_definitions(-w)
