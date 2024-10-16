@@ -335,7 +335,7 @@ void test_HSDL(std::string dataset, std::string query_path,int upper_k, int algo
   mm.use_rank_prune = 1; //HSDL
   mm.use_2023WWW_generation = algo; //0: HSDL, 1: 2023www
   mm.use_canonical_repair = is_clean; //clean
-  mm.max_run_time_seconds = 3600*48;
+  mm.max_run_time_seconds = 3600*10;
   mm.thread_num = 144;
 
   /* result info */
