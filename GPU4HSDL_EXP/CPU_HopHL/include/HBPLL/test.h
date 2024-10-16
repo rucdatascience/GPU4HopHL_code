@@ -154,6 +154,7 @@ void dijkstra_hopconstrained(const std::string dataset, const std::string query_
     std::cout << "read start" << std::endl;
 
     instance_graph.txt_read(dataset);
+    int V = instance_graph.size();
     std::cout << "read success" << std::endl;
 
     std::ifstream in(query_path);
@@ -179,16 +180,68 @@ void dijkstra_hopconstrained(const std::string dataset, const std::string query_
         if (!(iss >> source >> terminal)) {
             break;
         }
-        // Launch async task with unique index access
-        // futures.push_back(std::async(std::launch::async, [&instance_graph, source, upper_k, &distances, query_index]() {
-            
-        //     graph_v_of_v_hop_constrained_shortest_distance(instance_graph, source, upper_k, distances); // Use the unique index
-            
-        //     //return std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-        // }));
-        results.emplace_back(pool.enqueue([&instance_graph, source, upper_k] {
+        if(V>1000000)
+        {
+            results.emplace_back(pool.enqueue([&instance_graph, source, upper_k] {
                 std::vector<int> distances(instance_graph.size());
-                graph_v_of_v_hop_constrained_shortest_distance(instance_graph, source, upper_k, distances);
+                graph_v_of_v_hop_constrained_shortest_distance<int>(instance_graph, source, upper_k, distances);
+            }));
+        }
+        else{
+            results.emplace_back(pool.enqueue([&instance_graph, source,terminal, upper_k] {
+                int distances;
+                graph_v_of_v_hop_constrained_shortest_distance_speed_up<int>(instance_graph, source, terminal,upper_k, distances);
+            }));
+        }
+
+        query_index++; // Increment query index
+    }
+
+    // Collect results
+    for (auto &&result : results)
+		  result.get();
+    auto end = std::chrono::steady_clock::now();
+
+    result.query_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count(); // Convert to milliseconds
+    result.index_time = 0;
+    result.size = 0;
+}
+
+void dijkstra_hopconstrained_speed_up(const std::string dataset, const std::string query_path, int upper_k, Res& result) {
+
+    ThreadPool pool(144);
+    graph_v_of_v<int> instance_graph;
+    std::cout << "read start" << std::endl;
+
+    instance_graph.txt_read(dataset);
+    std::cout << "read success" << std::endl;
+
+    std::ifstream in(query_path);
+    if (!in) {
+        std::cout << "Cannot open input file.\n";
+        return;
+    }
+
+    std::string line;
+    int source, terminal;
+    double time = 0.0;
+
+    std::getline(in, line); // Skip the first line
+    // std::vector<int> distances(instance_graph.size());
+
+    // Process each query line asynchronously
+    std::vector<std::future<void>> results;
+    
+    int query_index = 0; // To track the current query index
+    auto begin = std::chrono::steady_clock::now();
+    while (std::getline(in, line)) {
+        std::istringstream iss(line);
+        if (!(iss >> source >> terminal)) {
+            break;
+        }
+        results.emplace_back(pool.enqueue([&instance_graph, source,terminal, upper_k] {
+                int distances;
+                graph_v_of_v_hop_constrained_shortest_distance_speed_up<int>(instance_graph, source, terminal,upper_k, distances);
             }));
 
         query_index++; // Increment query index
@@ -204,6 +257,66 @@ void dijkstra_hopconstrained(const std::string dataset, const std::string query_
     result.size = 0;
 }
 
+
+void dijkstra_hopconstrained_correctness(const std::string dataset, const std::string query_path, int upper_k, Res& result) {
+
+    ThreadPool pool(144);
+    graph_v_of_v<int> instance_graph;
+    std::cout << "read start" << std::endl;
+
+    instance_graph.txt_read(dataset);
+    std::cout << "read success" << std::endl;
+
+    std::ifstream in(query_path);
+    if (!in) {
+        std::cout << "Cannot open input file.\n";
+        return;
+    }
+
+    std::string line;
+    int source, terminal;
+    double time = 0.0;
+
+    std::getline(in, line); // Skip the first line
+    // std::vector<int> distances(instance_graph.size());
+
+    // Process each query line asynchronously
+    std::vector<std::future<void>> results;
+    
+    int query_index = 0; // To track the current query index
+    //auto begin = std::chrono::steady_clock::now();
+    while (std::getline(in, line)) {
+        std::istringstream iss(line);
+        if (!(iss >> source >> terminal)) {
+            break;
+        }
+        std::vector<int> distances(instance_graph.size());
+        int dis = -1;
+        graph_v_of_v_hop_constrained_shortest_distance_speed_up<int>(instance_graph, source, terminal,upper_k, dis);
+        graph_v_of_v_hop_constrained_shortest_distance<int>(instance_graph, source, upper_k, distances);
+        if(dis!=distances[terminal])
+        {
+            printf("dis(speed up)= %d, dis(origin)=%d\n",dis,distances[terminal]);
+            return;
+        }
+        if(query_index%1000 == 0)
+            {
+            printf("%d\n",query_index);
+            }
+        
+        query_index++; // Increment query index
+    }
+
+    // Collect results
+
+    
+    
+    //auto end = std::chrono::steady_clock::now();
+
+    //result.query_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count(); // Convert to milliseconds
+    //result.index_time = 0;
+    //result.size = 0;
+}
 
 void test_HSDL(std::string dataset, std::string query_path,int upper_k, int algo,Res &result,int is_clean) {
 

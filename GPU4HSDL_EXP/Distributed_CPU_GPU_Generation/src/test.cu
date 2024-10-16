@@ -160,34 +160,74 @@ void GPU_HSDL_checker (vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &insta
     return;
 }
 
-void query_vertex_pair(std::string query_path, vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &instance_graph, int upper_k,Res& result,int before_clean) {
-  std::ifstream in(query_path);
-  if (!in) {
-	std::cout << "Cannot open input file.\n";
-	return;
-  }
-  std::string line;
-  int source, terminal;
-  long long time = 0;
-  std::getline(in, line); // skip the first line
-  while (std::getline(in, line)) {
-	std::istringstream iss(line);
-	if (!(iss >> source >> terminal)) {
-	  break;
-	}
-  
-	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-	int query_dis = hop_constrained_extract_distance(LL, source, terminal, upper_k);
-	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count(); // s
-  //printf("time: %lf\n",time);
+// void query_vertex_pair(std::string query_path, vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &instance_graph, int upper_k,Res& result,int before_clean) {
+//   std::ifstream in(query_path);
+//   if (!in) {
+// 	std::cout << "Cannot open input file.\n";
+// 	return;
+//   }
+//   std::string line;
+//   int source=0, terminal=0;
+//   long long time = 0;
+//   std::getline(in, line); // skip the first line
+//   int lines = 0;
+//   while (std::getline(in, line)) {
+// 	std::istringstream iss(line);
+// 	if (!(iss >> source >> terminal)) {
+//     continue;
+// }
 
-  }
-  if(before_clean) 
-  	result.before_clean_query_time = time/1e6;
-  else{
-	result.query_time = time/1e6;
-  }
+//     printf("source %d,terminal: %d\n\n");
+//     lines++;
+// 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+// 	 for (int i = 0; i < 10; ++i) {
+//             hop_constrained_extract_distance(LL, source, terminal, upper_k);
+//      }
+// 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+//     time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count(); // s
+//   //printf("time: %lf\n",time);
+
+//   }
+//   if(lines!=100000)
+//   {
+//     printf("query error\n");
+//   }
+//   if(before_clean) 
+//   	result.before_clean_query_time = time/1e7;
+//   else{
+// 	result.query_time = time/1e7;
+//   }
+// }
+
+void query_vertex_pair(std::string query_path, vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &instance_graph, int upper_k, Res& result, int before_clean) {
+    std::ifstream in(query_path);
+    if (!in) {
+        std::cout << "Cannot open input file.\n";
+        return;
+    }
+    std::string header;
+    std::getline(in, header); // 跳过标题行
+    int source = 0, terminal = 0;
+    long long time = 0;
+    int lines = 0;
+    while (in >> source >> terminal) {
+        //printf("source %d, terminal: %d\n\n", source, terminal);
+        lines++;
+        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+        for (int i = 0; i < 10; ++i) {
+            hop_constrained_extract_distance(LL, source, terminal, upper_k);
+        }
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
+    }
+    if (lines != 100000) {
+        printf("query error\n");
+    }
+    if (before_clean) {
+        result.before_clean_query_time = time / 1e7;
+    } else {
+        result.query_time = time / 1e7;
+    }
 }
 
 int main (int argc, char **argv) {

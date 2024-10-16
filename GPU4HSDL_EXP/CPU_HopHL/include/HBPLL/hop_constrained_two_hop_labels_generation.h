@@ -342,8 +342,12 @@ void _2023WWW_thread_function(int v_k)
 
 		for (auto u : Vh[h])
 		{
+			
 			int P_u = dist_hop[u].first;
-
+			if(v_k > u )
+			{
+				continue;
+			}
 			int query_v_k_u = std::numeric_limits<int>::max();
 			mtx_599[u].lock();
 			for (auto &xx : L_temp_599[u])
@@ -364,7 +368,7 @@ void _2023WWW_thread_function(int v_k)
 			}
 			mtx_599[u].unlock();
 
-			if (v_k <= u && P_u < query_v_k_u)
+			if (P_u < query_v_k_u)
 			{
 
 				node.hub_vertex = v_k;
@@ -413,36 +417,36 @@ void _2023WWW_thread_function(int v_k)
 	mtx_599[max_N_ID_for_mtx_599 - 1].unlock();
 }
 
-void query_vertex_pair(std::string query_path, hop_constrained_case_info &case_info, graph_v_of_v<int> &instance_graph, int upper_k,Res& result,int before_clean) {
-  std::ifstream in(query_path);
-  if (!in) {
-	std::cout << "Cannot open input file.\n";
-	return;
-  }
-  std::string line;
-  int source, terminal;
-  double time = 0.0;
-  std::getline(in, line); // skip the first line
-  while (std::getline(in, line)) {
-	std::istringstream iss(line);
-	if (!(iss >> source >> terminal)) {
-	  break;
-	}
-  
-	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-	int query_dis = hop_constrained_extract_distance(case_info.L, source, terminal, upper_k);
-	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-  time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count(); // s
-  //printf("time: %lf\n",time);
-
-  }
-  if(before_clean) 
-  	result.before_clean_query_time = time/1e6;
-  else{
-	result.query_time = time/1e6;
-  }
+void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two_hop_label> >&LL, graph_v_of_v<int> &instance_graph, int upper_k, Res& result, int before_clean) {
+    std::ifstream in(query_path);
+    if (!in) {
+        std::cout << "Cannot open input file.\n";
+        return;
+    }
+    std::string header;
+    std::getline(in, header); // 跳过标题行
+    int source = 0, terminal = 0;
+    long long time = 0;
+    int lines = 0;
+    while (in >> source >> terminal) {
+        //printf("source %d, terminal: %d\n\n", source, terminal);
+        lines++;
+        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+        for (int i = 0; i < 10; ++i) {
+            hop_constrained_extract_distance(LL, source, terminal, upper_k);
+        }
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
+    }
+    if (lines != 100000) {
+        printf("query error\n");
+    }
+    if (before_clean) {
+        result.before_clean_query_time = time / 1e7;
+    } else {
+        result.query_time = time / 1e7;
+    }
 }
-
 
 
 /*sortL*/
@@ -705,7 +709,7 @@ void hop_constrained_two_hop_labels_generation(
       		index_size = index_size + (*it).size();
     	}	
     	result.before_clean_size = index_size;
-		query_vertex_pair(query_path, case_info, input_graph, case_info.upper_k,result,1);
+		query_vertex_pair(query_path, case_info.L, input_graph, case_info.upper_k,result,1);
 		begin = std::chrono::high_resolution_clock::now();
 		hop_constrained_clean_L(case_info, num_of_threads);
 		end = std::chrono::high_resolution_clock::now();
@@ -721,7 +725,7 @@ void hop_constrained_two_hop_labels_generation(
       		index_size = index_size + (*it).size();
     }
 	result.size = index_size;
-	query_vertex_pair(query_path, case_info, input_graph, case_info.upper_k,result,0);
+	query_vertex_pair(query_path, case_info.L, input_graph, case_info.upper_k,result,0);
 	
 
 

@@ -11,8 +11,8 @@ output="/home/pengchang/GPU4HSDL_EXP/results4.csv"         # 输出文件名
 for dataset_dir in "$data_dir"/*; do
     if [ -d "$dataset_dir" ]; then  # 检查是否为目录
         # 获取数据集文件和查询文件
-        dataset_file="$dataset_dir/*.e"          # 数据集文件
-        query_file="$dataset_dir/*.query"        # 查询文件
+        dataset_file="$dataset_dir/$dataset_dir.e"          # 数据集文件
+        query_file="$dataset_dir/$dataset_dir.query"        # 查询文件
         
         # 检查是否存在数据集文件和查询文件
         if ls $dataset_file 1> /dev/null 2>&1 && ls $query_file 1> /dev/null 2>&1; then
@@ -21,8 +21,8 @@ for dataset_dir in "$data_dir"/*; do
             query_path=$(ls $query_file)
 
             # 运行测试
-            for algo in 0; do  # algo 取值为 0 和 1
-                for k in $(seq 4 4); do  # upper_k 从 2 到 4
+            for algo in 2; do  # algo 取值为 0 和 1
+                for k in $(seq 2 4); do  # upper_k 从 2 到 4
                     echo "./build/test $dataset_file $k $algo $query_file is_clean"
                     ./build/test "$dataset" "$k" "$algo" "$query_path" "$output" 1 # 运行 C++ 程序
                 done

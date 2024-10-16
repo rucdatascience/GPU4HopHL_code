@@ -645,7 +645,7 @@ int label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v2
         // cudaEventElapsedTime(&elapsedTime, start, stop);
         // printf("Time generation in hop %d : %.8lf s\n", iter, elapsedTime / 1000.0);
     }
-    printf("time 1, 2, 3, 4: %.5lf, %.5lf, %.5lf, %.5lf \n", time1, time2, time3, time4);
+    //printf("time 1, 2, 3, 4: %.5lf, %.5lf, %.5lf, %.5lf \n", time1, time2, time3, time4);
 
     err = cudaGetLastError(); // ¼ì²éÄÚºËÄÚ´æÉêÇë´íÎó
     if (err != cudaSuccess) {
@@ -656,7 +656,7 @@ int label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v2
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsedTime, start, stop);
-    printf("Time generation: %.6fs\n", elapsedTime / 1000.0);
+    //printf("Time generation: %.6fs\n", elapsedTime / 1000.0);
 
     info->time_generate_labels += elapsedTime / 1000.0;
     cudaEventDestroy(start);

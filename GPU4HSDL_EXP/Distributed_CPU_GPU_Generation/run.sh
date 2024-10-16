@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # 设置参数
-data_dir="/home/pengchang/GPU4HSDL_EXP/new-data"          # 数据文件夹路径
+data_dir="/home/pengchang/GPU4HSDL_EXP/new-data/test2"          # 数据文件夹路径
 output="/home/pengchang/GPU4HSDL_EXP/results4.csv"         # 输出文件名
 
 # 清空已有的结果文件并写入表头

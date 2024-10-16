@@ -23,6 +23,7 @@ message("Include directories: ${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(${PROJECT_NAME} pthread)
 
 add_executable(test ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp)
+add_executable(test_hop ${CMAKE_CURRENT_SOURCE_DIR}/test_hop.cpp)
 
 # # Custom command to generate dependencies for test.cpp
 # add_custom_command(
