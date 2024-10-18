@@ -160,75 +160,57 @@ void GPU_HSDL_checker (vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &insta
     return;
 }
 
-// void query_vertex_pair(std::string query_path, vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &instance_graph, int upper_k,Res& result,int before_clean) {
-//   std::ifstream in(query_path);
-//   if (!in) {
-// 	std::cout << "Cannot open input file.\n";
-// 	return;
-//   }
-//   std::string line;
-//   int source=0, terminal=0;
-//   long long time = 0;
-//   std::getline(in, line); // skip the first line
-//   int lines = 0;
-//   while (std::getline(in, line)) {
-// 	std::istringstream iss(line);
-// 	if (!(iss >> source >> terminal)) {
-//     continue;
-// }
 
-//     printf("source %d,terminal: %d\n\n");
-//     lines++;
-// 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-// 	 for (int i = 0; i < 10; ++i) {
-//             hop_constrained_extract_distance(LL, source, terminal, upper_k);
-//      }
-// 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-//     time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count(); // s
-//   //printf("time: %lf\n",time);
 
-//   }
-//   if(lines!=100000)
-//   {
-//     printf("query error\n");
-//   }
-//   if(before_clean) 
-//   	result.before_clean_query_time = time/1e7;
-//   else{
-// 	result.query_time = time/1e7;
-//   }
-// }
+void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two_hop_label> >&LL, graph_v_of_v<int> &instance_graph, int upper_k, Res& result, int before_clean) {
+    const int ITERATIONS = 100;  // 进行100次完整的查询操作
 
-void query_vertex_pair(std::string query_path, vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &instance_graph, int upper_k, Res& result, int before_clean) {
-    std::ifstream in(query_path);
-    if (!in) {
-        std::cout << "Cannot open input file.\n";
-        return;
-    }
-    std::string header;
-    std::getline(in, header); // 跳过标题行
-    int source = 0, terminal = 0;
-    long long time = 0;
-    int lines = 0;
-    while (in >> source >> terminal) {
-        //printf("source %d, terminal: %d\n\n", source, terminal);
-        lines++;
-        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-        for (int i = 0; i < 10; ++i) {
-            hop_constrained_extract_distance(LL, source, terminal, upper_k);
+    long long total_time = 0;  // 累计所有查询的时间
+
+    for (int iter = 0; iter < ITERATIONS; ++iter) {
+        std::ifstream in(query_path);  // 每次循环重新打开文件
+        if (!in) {
+            std::cerr << "Cannot open input file: " << query_path << "\n";
+            return;
         }
-        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
+
+        std::string header;
+        std::getline(in, header); // 跳过标题行
+
+        int source = 0, terminal = 0;
+        long long time = 0;
+        int lines = 0;
+
+        // 执行一次完整的文件查询操作
+        while (in >> source >> terminal) {
+            lines++;
+            auto begin = std::chrono::steady_clock::now();
+            
+            // 每对 source 和 terminal 执行一次查询
+            hop_constrained_extract_distance(LL, source, terminal, upper_k);
+            
+            auto end = std::chrono::steady_clock::now();
+            time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
+        }
+
+        // 验证查询行数是否符合预期
+        if (lines != 100000) {
+            std::cerr << "Query error: Expected 100000 lines, but got " << lines << "\n";
+        }
+
+        total_time += time;  // 将每次的查询时间累加
     }
-    if (lines != 100000) {
-        printf("query error\n");
-    }
-    if (before_clean) {
-        result.before_clean_query_time = time / 1e7;
+
+    // 计算平均查询时间
+    if (before_clean == 1) {
+       
+        result.before_clean_query_time = total_time / ITERATIONS / 1e6;  // 总时间除以ITERATIONS，转换为ms
     } else {
-        result.query_time = time / 1e7;
+        printf("total time %ld\n",total_time);
+        result.query_time = total_time / ITERATIONS / 1e6;  // 总时间除以ITERATIONS，转换为ms
     }
 }
+
 
 int main (int argc, char **argv) {
     Res result;
@@ -283,6 +265,7 @@ int main (int argc, char **argv) {
         instance_graph.txt_save("../data/simple_iterative_tests.txt");
     }else{
         instance_graph.txt_read(data_path);
+        instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph);
         V = instance_graph.size();
         for (int i = 0; i < V; ++i) {E += instance_graph[i].size();}
         Distributed_Graph_Num = (V + G_max - 1) / G_max;
@@ -389,7 +372,7 @@ int main (int argc, char **argv) {
         printf("check union !\n");
         GPU_HSDL_checker(L, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
     }
-    query_vertex_pair(query_path, L, instance_graph, upper_k,result,0);
+    
     
     while (!pq.empty()) {
         Executive_Core x = pq.top();
@@ -412,12 +395,13 @@ int main (int argc, char **argv) {
     for (int i = 0; i < V; ++i) {
         label_size_total += L[i].size();
     }
+    query_vertex_pair(query_path, L, instance_graph, upper_k,result,0);
 
 //    输出详细记录
     if (print_details) {
-        printf("CPU Lable Size: %.6lf\n", (double)label_size_cpu / V);
-        printf("GPU Lable Size: %.6lf\n", (double)label_size_gpu / V);
-        printf("Total Lable Size: %.6lf\n", (double)label_size_total / V);
+        // printf("CPU Lable Size: %.6lf\n", (double)label_size_cpu / V);
+        // printf("GPU Lable Size: %.6lf\n", (double)label_size_gpu / V);
+        printf("Total Lable Size: %.6lf\n", (double)label_size_total);
         printf("CPU Time Generation: %.6lf\n", info_cpu.time_generate_labels);
         printf("CPU Time Tranverse: %.6lf\n", info_cpu.time_traverse);
         printf("CPU Time Init: %.6lf\n", info_cpu.time_initialization);

@@ -1,0 +1,14 @@
+algo,type,data_set,K,index_time(s),size(MB),before_clean_size(MB),query_time(ms),before_clean_query_time(ms),clean_time(s)
+
+Hybrid,GPU,facebook_clean_data,2,3.42568,44167934,0,1.73619,0,0
+Hybrid,GPU,facebook_clean_data,3,22.6717,312190513,0,1.73679,0,0
+Hybrid,GPU,facebook_clean_data,4,33.3235,730220986,0,1.7362,0,0
+Hybrid,GPU,git_web_ml,2,0.758706,3485741,0,1.72475,0,0
+Hybrid,GPU,git_web_ml,3,3.57623,14205987,0,2.54948,0,0
+Hybrid,GPU,git_web_ml,4,7.47254,38272459,0,1.75247,0,0
+Hybrid,GPU,twitch,2,1.00381,4612290,0,2.23515,0,0
+Hybrid,GPU,twitch,3,1.51481,16200153,0,2.51979,0,0
+Hybrid,GPU,twitch,4,2.86125,34356980,0,1.74071,0,0
+Hybrid,GPU,twitch_gamers,2,45.674,229565822,0,1.73062,0,0
+Hybrid,GPU,twitch_gamers,3,176.857,1865707613,0,1.72309,0,0
+Hybrid,GPU,twitch_gamers,4,322.089,5499789240,0,1.72147,0,0
