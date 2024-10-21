@@ -23,7 +23,7 @@ for dataset_dir in "$data_dir"/*; do
             # 运行测试
             for algo in 0; do  # algo 取值为 0 和 1,Hybrid,GPU
                 for k in $(seq 2 4); do  # upper_k 从 2 到 4
-                    echo "./build/bin/test $dataset_file $k $algo $query_file 1"
+                    echo "./build/bin/test $dataset_file $k $algo $query_file "$output" 1"
                     ./build/bin/test "$dataset" "$k" "$algo" "$query_path" "$output" 1 # 运行 C++ 程序
                 done
             done

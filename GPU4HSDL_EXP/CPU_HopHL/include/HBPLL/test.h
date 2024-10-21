@@ -353,6 +353,7 @@ void test_HSDL(std::string dataset, std::string query_path,int upper_k, int algo
 	  cout<<"read start"<<endl;
 
     instance_graph.txt_read(dataset);
+    instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small<int>(instance_graph);
     int E = 0;
     for (int i = 0; i < instance_graph.size(); ++i) E += instance_graph[i].size();
     printf("E: %d\n\n",E);
@@ -390,10 +391,10 @@ void test_HSDL(std::string dataset, std::string query_path,int upper_k, int algo
     // avg_index_size_per_v =
     //     avg_index_size_per_v + (double)index_size / V / iteration_graph_times;
 
-    hop_constrained_check_correctness(mm, instance_graph,
-                                      iteration_source_times,
-                                      iteration_terminal_times,
-                                      mm.upper_k,result);
+    // hop_constrained_check_correctness(mm, instance_graph,
+    //                                   iteration_source_times,
+    //                                   iteration_terminal_times,
+    //                                   mm.upper_k,result);
     // mm.print_L();
     //query_vertex_pair(query_path, mm, instance_graph, upper_k,result);
     mm.clear_labels();

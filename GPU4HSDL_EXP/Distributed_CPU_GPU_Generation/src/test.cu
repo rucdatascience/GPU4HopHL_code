@@ -163,6 +163,7 @@ void GPU_HSDL_checker (vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &insta
 
 
 void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two_hop_label> >&LL, graph_v_of_v<int> &instance_graph, int upper_k, Res& result, int before_clean) {
+    
     const int ITERATIONS = 100;  // 进行100次完整的查询操作
 
     long long total_time = 0;  // 累计所有查询的时间
@@ -180,18 +181,26 @@ void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two
         int source = 0, terminal = 0;
         long long time = 0;
         int lines = 0;
-
+        long long match_count = 0;//实际计算次数
+        volatile long long dis=0;
         // 执行一次完整的文件查询操作
+        //auto begin = std::chrono::steady_clock::now();
         while (in >> source >> terminal) {
             lines++;
+            
             auto begin = std::chrono::steady_clock::now();
-            
             // 每对 source 和 terminal 执行一次查询
-            hop_constrained_extract_distance(LL, source, terminal, upper_k);
-            
+            dis+= hop_constrained_extract_distance(LL, source, terminal, upper_k);
             auto end = std::chrono::steady_clock::now();
             time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
+            
+            if(lines%10000==0)
+            {
+                printf("size1: %d,size2: %d, total time now: %lld,match count: %lld\n\n",LL[source].size(),LL[terminal].size(),time,match_count);
+            }
         }
+        // auto end = std::chrono::steady_clock::now();
+        // time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
 
         // 验证查询行数是否符合预期
         if (lines != 100000) {
@@ -199,6 +208,7 @@ void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two
         }
 
         total_time += time;  // 将每次的查询时间累加
+        
     }
 
     // 计算平均查询时间
@@ -217,7 +227,7 @@ int main (int argc, char **argv) {
 
     // 样例图参数
     string data_path = "/home/pengchang/GPU4HSDL_EXP/new-data/git_web_ml/git_web_ml.e";
-    int V = 30855, E = 577873;
+    int V = 308550, E = 577873;
     // int Distributed_Graph_Num = 30;
     // int G_max = V / Distributed_Graph_Num + 1;
     int G_max = 1000;

@@ -1,0 +1,6 @@
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.e 2 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.e 3 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
