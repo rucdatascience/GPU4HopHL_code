@@ -1,5 +1,6 @@
 #ifndef GRAPHPOOL_HPP
 #define GRAPHPOOL_HPP
+#pragma once
 
 #include <thread>
 #include <unistd.h>

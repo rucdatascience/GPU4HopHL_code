@@ -1,5 +1,6 @@
 #ifndef MMPOOL_V2_CUH
 #define MMPOOL_V2_CUH
+#pragma once
 
 #include "definition/mmpool_size.h"
 #include <cuda_runtime.h>

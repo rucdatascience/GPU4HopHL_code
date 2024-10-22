@@ -10,8 +10,6 @@
 #include <limits>
 #include <vector>
 
-using namespace std;
-
 /* T队列中元素类型 */
 struct T_item {
     int vertex;

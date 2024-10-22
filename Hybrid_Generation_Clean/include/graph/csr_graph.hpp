@@ -1,13 +1,14 @@
 #ifndef CSR_GRAPH_HPP
 #define CSR_GRAPH_HPP
-
 #pragma once
+
 #include "cuda_runtime.h"
 #include <cuda_runtime_api.h>
 #include <vector>
 // #include <graph_structure/graph_structure.hpp>
 #include <graph/ldbc.hpp>
 #include <graph_v_of_v/graph_v_of_v.h>
+
 /*for GPU*/
 template <typename weight_type>
 class CSR_graph
@@ -23,6 +24,13 @@ public:
     int *in_pointer, *out_pointer, *in_edge, *out_edge, *all_pointer, *all_edge;
     int *in_edge_weight, *out_edge_weight;
     int E_all;
+
+    __host__ void destroy_csr_graph () {
+        cudaFree(in_pointer), cudaFree(out_pointer);
+        cudaFree(in_edge), cudaFree(out_edge);
+        cudaFree(out_edge), cudaFree(all_edge);
+        cudaFree(in_edge_weight), cudaFree(out_edge_weight);
+    }
 };
 
 template <typename weight_type>

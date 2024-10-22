@@ -58,7 +58,7 @@ int main()
 ------------------------------------
 */
 
-void example_binary_save_read_vector() {
+static void example_binary_save_read_vector() {
 
     std::vector<int> a = { 1, 2, 4 };
     binary_save_vector("b.txt", a);

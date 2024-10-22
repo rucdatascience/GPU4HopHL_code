@@ -1,15 +1,19 @@
 #ifndef GLOBAL_LABELS_V2_CUH
 #define GLOBAL_LABELS_V2_CUH
+#pragma once
 
 #include "definition/hub_def.h"
 #include "label/hop_constrained_two_hop_labels_v2.cuh"
+#include "HBPLL/hop_constrained_two_hop_labels.h"
 #include "memoryManagement/cuda_hashtable_v2.cuh"
 #include "memoryManagement/cuda_vector_v2.cuh"
 #include "memoryManagement/mmpool_v2.cuh"
 #include <cuda_runtime.h>
+#include <memoryManagement/cuda_vector.cuh>
 
 class hop_constrained_case_info_v2 {
 public:
+// for generation
     /* labels */
     mmpool_v2<hub_type> *mmpool_labels = NULL;
     mmpool_v2<T_item> *mmpool_T0 = NULL;
@@ -30,13 +34,13 @@ public:
     
     int *Num_T; // Num_T, Test use
     int *Num_L;
-    pair<int, int> *T_push_back;
-    pair<int, int> *L_push_back;
+    std::pair<int, int> *T_push_back;
+    std::pair<int, int> *L_push_back;
 
     /*hop bounded*/
     int thread_num = 1;
     int hop_cst = 0;
-    int use_d_optimization = 0;
+    int Distributed_Graph_Num = 0;
 
     /*running time records*/
 	double time_initialization = 0;
@@ -53,7 +57,7 @@ public:
     // Constructor
     // mmpool_size_block is the total number of elements to store
     // nodes_per_block is the required number of blocks
-    __host__ void init (int V, int hop_cst, int G_max, int thread_num, vector<vector<int> > graph_group) {
+    __host__ void init (int V, int hop_cst, int G_max, int thread_num, std::vector<std::vector<int> > graph_group) {
         
         cudaError_t err;
         size_t free_byte, total_byte;
@@ -116,36 +120,26 @@ public:
         cudaMallocManaged(&D_hash, (long long) thread_num * sizeof(cuda_hashTable_v2<weight_type>));
         cudaDeviceSynchronize();
         for (int i = 0; i < thread_num; i++) {
-            new (D_hash + i) cuda_hashTable_v2 <int> (V);
+            new (D_hash + i) cuda_hashTable_v2 <weight_type> (V);
         }
         cudaDeviceSynchronize();
         
         // 准备 D_parent_vertex
         cudaMallocManaged(&D_pare, (long long) thread_num * V * sizeof(int));
-        // cudaMemset(D_pare, 0, (long long) thread_num * V * sizeof(int));
         cudaDeviceSynchronize();
 
         // 准备 D_vector
         cudaMallocManaged(&D_vector, (long long) thread_num * V * sizeof(int));
-        // cudaMemset(D_vector, 0, (long long) thread_num * V * sizeof(int));
         cudaDeviceSynchronize();
         
-        // 准备 LT_push_back_table
-        // cudaMallocManaged(&LT_push_back, (long long) thread_num * V * sizeof(int));
-        // cudaDeviceSynchronize();
-
         cudaMallocManaged(&Num_T, (long long) sizeof(int) * V);
-        // cudaMemset(Num_T, 0, (long long) V * sizeof(int));
         cudaDeviceSynchronize();
-        cudaMallocManaged(&T_push_back, (long long) thread_num * V * sizeof(pair<int, int>));
-        // cudaMemset(T_push_back, 0, (long long) thread_num * V * sizeof(pair<int, int>));
+        cudaMallocManaged(&T_push_back, (long long) thread_num * V * sizeof(std::pair<int, int>));
         cudaDeviceSynchronize();
 
         cudaMallocManaged(&Num_L, (long long) sizeof(int) * V);
-        // cudaMemset(Num_L, 0, (long long) V * sizeof(int));
         cudaDeviceSynchronize();
-        cudaMallocManaged(&L_push_back, (long long) thread_num * V * sizeof(pair<int, int>));
-        // cudaMemset(T_push_back, 0, (long long) thread_num * V * sizeof(pair<int, int>));
+        cudaMallocManaged(&L_push_back, (long long) thread_num * V * sizeof(std::pair<int, int>));
         cudaDeviceSynchronize();
 
 	    // cudaMemGetInfo(&free_byte, &total_byte);
@@ -157,6 +151,20 @@ public:
         }
     }
 
+    // set nid
+    __host__ void set_nid (int distributed_graph_num, std::vector<std::vector<int> > graph_group) {
+        Distributed_Graph_Num = distributed_graph_num;
+        cudaMallocManaged(&nid, sizeof(int*) * Distributed_Graph_Num);
+        cudaMallocManaged(&nid_size, sizeof(int) * Distributed_Graph_Num);
+        for (int j = 0; j < Distributed_Graph_Num; ++ j) {
+            cudaMallocManaged(&nid[j], sizeof(int) * graph_group[j].size());
+            nid_size[j] = graph_group[j].size();
+            for (int k = 0; k < graph_group[j].size(); ++k) {
+                nid[j][k] = graph_group[j][k];
+            }
+        }
+    }
+
     // Points in label
     inline int cuda_vector_size() {
         return L_size;
@@ -165,25 +173,34 @@ public:
     // destructor
     __host__ void destroy_L_cuda() {
         for (int i = 0; i < L_size; ++i) {
-            L_cuda[i].~cuda_vector_v2<hub_type>();
+            L_cuda[i].~cuda_vector_v2 <hub_type> ();
         }
         cudaFree(L_cuda);
 
         for (int i = 0; i < G_max; ++i) {
-            T0[i].~cuda_vector_v2<T_item>();
-            T1[i].~cuda_vector_v2<T_item>();
+            T0[i].~cuda_vector_v2 <T_item> ();
+            T1[i].~cuda_vector_v2 <T_item> ();
         }
         cudaFree(T0);
         cudaFree(T1);
 
         for (int i = 0; i < thread_num; ++i) {
-            L_hash[i].~cuda_hashTable_v2<int>();
-            D_hash[i].~cuda_hashTable_v2<int>();
+            L_hash[i].~cuda_hashTable_v2 <weight_type> ();
+            D_hash[i].~cuda_hashTable_v2 <weight_type> ();
         }
+        
+        for (int i = 0; i < Distributed_Graph_Num; ++ i) {
+            cudaFree(nid[i]);
+        }
+        cudaFree(nid);
+        cudaFree(nid_size);
+
         cudaFree(L_hash);
         cudaFree(D_hash);
 
         cudaFree(D_vector);
+        cudaFree(D_pare);
+
         cudaFree(Num_T);
         cudaFree(T_push_back);
         cudaFree(Num_L);
@@ -197,6 +214,13 @@ public:
         cudaFree(mmpool_T1);
 
     }
+
+// for clean
+    long long *L_start = nullptr;
+    int *node_id = nullptr;
+    hop_constrained_two_hop_label *L = nullptr; // label on gpu
+    int *mark = nullptr; // mark the label clean state
+    int *hash_array = nullptr;
 
 };
 

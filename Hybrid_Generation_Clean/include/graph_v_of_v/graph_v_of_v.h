@@ -1,5 +1,6 @@
+#ifndef GRAPH_V_OF_V_H
+#define GRAPH_V_OF_V_H
 #pragma once
-
 /*the following codes are for testing
 
 ---------------------------------------------------
@@ -330,6 +331,7 @@ ARRAY_graph<weight_type> graph_v_of_v<weight_type>::toARRAY() {
 	return ARRAY;
 }
 
+#endif
 // void graph_v_of_v_example() {
 
 // 	/*

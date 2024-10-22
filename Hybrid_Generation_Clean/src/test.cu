@@ -16,7 +16,7 @@
 #include <graph_v_of_v/graph_v_of_v_update_vertexIDs_by_degrees_large_to_small.h>
 
 #include <HBPLL/hop_constrained_two_hop_labels_generation.h>
-// #include <HBPLL/gpu_clean.cuh>
+#include <HBPLL/gpu_clean.cuh>
 
 #include <vgroup/CDLP_group.cuh>
 
@@ -147,25 +147,27 @@ void GPU_HSDL_checker (vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &insta
 }
 
 int main () {
-    
+    size_t free_byte, total_byte;
+    cudaMemGetInfo(&free_byte, &total_byte);
+
     // Test frequency parameter
     int iteration_graph_times = 1;
     int iteration_source_times = 1000, iteration_terminal_times = 1000;
 
     // Sample diagram parameters
-    int V = 200000, E = 1000000;
-    int Distributed_Graph_Num = 200;
+    int V = 10000, E = 50000;
+    int Distributed_Graph_Num = 10;
     int G_max = V / Distributed_Graph_Num + 1;
     // int G_max = 1000;
     // int Distributed_Graph_Num = (V + G_max - 1) / G_max;
 
     // G_max = 1;
     int CPU_Gen_Num = 1, GPU_Gen_Num = 4;
-    int CPU_Clean_Num = 1, GPU_Clean_Num = 0;
-
-    int hop_cst = 4, thread_num = 1000;
+    int CPU_Clean_Num = 1, GPU_Clean_Num = 4;
+    
+    int hop_cst = 4, thread_num = 1000, thread_num_clean = 5000;
     double ec_min = 1, ec_max = 100;
-
+    
     double time_generate_labels_total = 0.0;
     double time_clean_labels_total = 0.0;
     
@@ -191,7 +193,6 @@ int main () {
     info_gpu->init(V, hop_cst, G_max, thread_num, graph_pool.graph_group);
     info_gpu->hop_cst = hop_cst;
     info_gpu->thread_num = thread_num;
-    info_gpu->use_d_optimization = 1;
     printf("Init GPU_Info Successful!\n");
     
     // init label
@@ -219,7 +220,7 @@ int main () {
     // init cpu_generation
     hop_constrained_two_hop_labels_generation_init(instance_graph, info_cpu);
 
-    // get graph_pool
+    // get graph_pool, use_cd 0/1
     if (use_cd == 0) {
         graph_pool.graph_group.resize(Distributed_Graph_Num);
         int Nodes_Per_Graph = (V - 1) / Distributed_Graph_Num + 1;
@@ -234,16 +235,16 @@ int main () {
         generate_Group_CDLP(instance_graph, graph_pool.graph_group, G_max);
         Distributed_Graph_Num = graph_pool.graph_group.size();
     }
-
-    cudaMallocManaged(&info_gpu->nid, sizeof(int*) * Distributed_Graph_Num);
-    cudaMallocManaged(&info_gpu->nid_size, sizeof(int) * Distributed_Graph_Num);
-    for (int j = 0; j < Distributed_Graph_Num; ++ j) {
-        cudaMallocManaged(&info_gpu->nid[j], sizeof(int) * graph_pool.graph_group[j].size());
-        info_gpu->nid_size[j] = graph_pool.graph_group[j].size();
-        for (int k = 0; k < graph_pool.graph_group[j].size(); ++k) {
-            info_gpu->nid[j][k] = graph_pool.graph_group[j][k];
-        }
-    }
+    info_gpu->set_nid(Distributed_Graph_Num, graph_pool.graph_group);
+    // cudaMallocManaged(&info_gpu->nid, sizeof(int*) * Distributed_Graph_Num);
+    // cudaMallocManaged(&info_gpu->nid_size, sizeof(int) * Distributed_Graph_Num);
+    // for (int j = 0; j < Distributed_Graph_Num; ++ j) {
+    //     cudaMallocManaged(&info_gpu->nid[j], sizeof(int) * graph_pool.graph_group[j].size());
+    //     info_gpu->nid_size[j] = graph_pool.graph_group[j].size();
+    //     for (int k = 0; k < graph_pool.graph_group[j].size(); ++k) {
+    //         info_gpu->nid[j][k] = graph_pool.graph_group[j][k];
+    //     }
+    // }
     
     printf("G_max: %d\n",G_max);
 
@@ -304,6 +305,16 @@ int main () {
         time_generate_labels_total = max(time_generate_labels_total, x.time_use);
         printf("Time_Generate_Labels_Total: %.6lf\n", time_generate_labels_total);
     }
+    
+    // Clear video memory
+    printf("Device memory start: total %ld, free %ld\n", total_byte, free_byte);
+    cudaMemGetInfo(&free_byte, &total_byte);
+    printf("Device memory before: total %ld, free %ld\n", total_byte, free_byte);
+    info_gpu->destroy_L_cuda();
+    csr_graph.destroy_csr_graph();
+    free(info_gpu);
+    cudaMemGetInfo(&free_byte, &total_byte);
+    printf("Device memory after: total %ld, free %ld\n", total_byte, free_byte);
 
     // sort the label.
     for (int v_k = 0; v_k < V; ++ v_k) {
@@ -317,6 +328,10 @@ int main () {
         for (int i = 0; i < CPU_Clean_Num; ++i) pq_clean.push(Executive_Core(i, 0, 0)); // id, time, cpu/gpu
         for (int i = 0; i < GPU_Clean_Num; ++i) pq_clean.push(Executive_Core(CPU_Clean_Num + i, 0, 1)); // id, time, cpu/gpu
 
+        if (GPU_Clean_Num) {
+            gpu_clean_init(instance_graph, L_hybrid, info_gpu, graph_pool, thread_num, hop_cst);
+        }
+
         for (int i = 0; i < Distributed_Graph_Num; ++i) {
 
             Executive_Core x = pq_clean.top();
@@ -327,11 +342,11 @@ int main () {
                 hop_constrained_clean_L_distributed(info_cpu, L_hybrid, graph_pool.graph_group[i], info_cpu.thread_num);
                 // hop_constrained_clean_L(info_cpu, L_hybrid, info_cpu.thread_num, V);
             } else {
-                // label_gen(csr_graph, info_gpu, L, graph_pool.graph_group[i], i);
+                gpu_clean(instance_graph, info_gpu, L_hybrid, thread_num_clean, i);
             }
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-            printf("Clean Core Duration: %lf\n", duration);
+            // printf("Clean Core Duration: %lf\n", duration);
             x.time_use += duration;
             pq_clean.push(x);
 
@@ -365,7 +380,5 @@ int main () {
         printf("GPU Time Tranverse: %.6lf\n", info_gpu->time_traverse_labels);
         printf("Total Time Generation: %.6lf\n", time_generate_labels_total);
     }
-
-    info_gpu->destroy_L_cuda();
     return 0;
 }

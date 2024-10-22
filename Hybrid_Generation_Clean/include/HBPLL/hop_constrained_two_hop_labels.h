@@ -33,11 +33,11 @@ namespace std {
 } // namespace std
 
 // 定义等价性比较操作符
-inline bool operator == (const hop_constrained_two_hop_label &lhs, const hop_constrained_two_hop_label &rhs) {
+inline static bool operator == (const hop_constrained_two_hop_label &lhs, const hop_constrained_two_hop_label &rhs) {
 	return lhs.hub_vertex == rhs.hub_vertex && lhs.parent_vertex == rhs.parent_vertex && lhs.hop == rhs.hop && lhs.distance == rhs.distance;
 }
 
-inline bool operator < (hop_constrained_two_hop_label const &x, hop_constrained_two_hop_label const &y) {
+inline static bool operator < (hop_constrained_two_hop_label const &x, hop_constrained_two_hop_label const &y) {
 	if (x.distance != y.distance) {
 		return x.distance > y.distance; // < is the max-heap; > is the min heap
 	} else {
@@ -87,7 +87,7 @@ public:
 	double max_run_time_seconds = 1e12;
 
 	/*labels*/
-	vector<vector<hop_constrained_two_hop_label>> L;
+	std::vector<std::vector<hop_constrained_two_hop_label>> L;
 
 	double label_size_before_canonical_repair, label_size_after_canonical_repair, canonical_repair_remove_label_ratio;
 
@@ -108,54 +108,54 @@ public:
 
 	/*clear labels*/
 	void clear_labels() {
-		vector<vector<hop_constrained_two_hop_label>>().swap(L);
+		std::vector<std::vector<hop_constrained_two_hop_label>>().swap(L);
 	}
 
 	void print_L() {
-		cout << "print_L: (hub_vertex, hop, distance, parent_vertex)" << endl;
+		std::cout << "print_L: (hub_vertex, hop, distance, parent_vertex)" << std::endl;
 		for (auto &xx : L) {
 			for (auto &yy : xx) {
-				cout << "(" << yy.hub_vertex << "," << yy.hop << "," << yy.distance << "," << yy.parent_vertex << ") ";
+				std::cout << "(" << yy.hub_vertex << "," << yy.hop << "," << yy.distance << "," << yy.parent_vertex << ") ";
 			}
-			cout << endl;
+			std::cout << std::endl;
 		}
 	}
 
 	/*record_all_details*/
-	void record_all_details(string save_name) {
-		ofstream outputFile;
+	void record_all_details(std::string save_name) {
+		std::ofstream outputFile;
 		outputFile.precision(6);
-		outputFile.setf(ios::fixed);
-		outputFile.setf(ios::showpoint);
+		outputFile.setf(std::ios::fixed);
+		outputFile.setf(std::ios::showpoint);
 		outputFile.open(save_name + ".txt");
 
-		outputFile << "hop_constrained_case_info:" << endl;
-		outputFile << "thread_num=" << thread_num << endl;
-		outputFile << "upper_k=" << upper_k << endl;
+		outputFile << "hop_constrained_case_info:" << std::endl;
+		outputFile << "thread_num=" << thread_num << std::endl;
+		outputFile << "upper_k=" << upper_k << std::endl;
 		// outputFile << "use_2M_prune=" << use_2M_prune << endl;
-		outputFile << "use_2023WWW_generation=" << use_2023WWW_generation << endl;
-		outputFile << "use_canonical_repair=" << use_canonical_repair << endl;
+		outputFile << "use_2023WWW_generation=" << use_2023WWW_generation << std::endl;
+		outputFile << "use_canonical_repair=" << use_canonical_repair << std::endl;
 
-		outputFile << "time_initialization=" << time_initialization << endl;
-		outputFile << "time_generate_labels=" << time_generate_labels << endl;
-		outputFile << "time_sortL=" << time_sortL << endl;
-		outputFile << "time_canonical_repair=" << time_canonical_repair << endl;
-		outputFile << "time_total=" << time_total << endl;
+		outputFile << "time_initialization=" << time_initialization << std::endl;
+		outputFile << "time_generate_labels=" << time_generate_labels << std::endl;
+		outputFile << "time_sortL=" << time_sortL << std::endl;
+		outputFile << "time_canonical_repair=" << time_canonical_repair << std::endl;
+		outputFile << "time_total=" << time_total << std::endl;
 
-		outputFile << "max_bit_size=" << max_bit_size << endl;
-		outputFile << "max_run_time_seconds=" << max_run_time_seconds << endl;
+		outputFile << "max_bit_size=" << max_bit_size << std::endl;
+		outputFile << "max_run_time_seconds=" << max_run_time_seconds << std::endl;
 
-		outputFile << "label_size_before_canonical_repair=" << label_size_before_canonical_repair << endl;
-		outputFile << "label_size_after_canonical_repair=" << label_size_after_canonical_repair << endl;
-		outputFile << "canonical_repair_remove_label_ratio=" << canonical_repair_remove_label_ratio << endl;
+		outputFile << "label_size_before_canonical_repair=" << label_size_before_canonical_repair << std::endl;
+		outputFile << "label_size_after_canonical_repair=" << label_size_after_canonical_repair << std::endl;
+		outputFile << "canonical_repair_remove_label_ratio=" << canonical_repair_remove_label_ratio << std::endl;
 
-		outputFile << "compute_label_bit_size()=" << compute_label_bit_size() << endl;
+		outputFile << "compute_label_bit_size()=" << compute_label_bit_size() << std::endl;
 
 		outputFile.close();
 	}
 };
 
-inline int hop_constrained_extract_distance(vector<vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst) {
+inline int hop_constrained_extract_distance(std::vector<std::vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst) {
 
 	/*return std::numeric_limits<int>::max() is not connected*/
 
@@ -217,9 +217,9 @@ inline int hop_constrained_extract_distance(vector<vector<hop_constrained_two_ho
 	return distance;
 }
 
-inline vector<pair<int, int>> hop_constrained_extract_shortest_path(vector<vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst) {
+inline std::vector<std::pair<int, int>> hop_constrained_extract_shortest_path(std::vector<std::vector<hop_constrained_two_hop_label>> &L, int source, int terminal, int hop_cst) {
 
-	vector<pair<int, int>> paths;
+	std::vector<std::pair<int, int>> paths;
 
 	if (source == terminal) {
 		return paths;
@@ -286,10 +286,11 @@ inline vector<pair<int, int>> hop_constrained_extract_shortest_path(vector<vecto
 	}
 
 	// find new edges
-	vector<pair<int, int>> new_edges = hop_constrained_extract_shortest_path(L, source, terminal, hop_cst);
+	std::vector<std::pair<int, int>> new_edges = hop_constrained_extract_shortest_path(L, source, terminal, hop_cst);
 
 	paths.insert(paths.end(), new_edges.begin(), new_edges.end());
 
 	return paths;
 }
+
 #endif // HOP_CONSTRAINED_TWO_HOP_LABELS_H

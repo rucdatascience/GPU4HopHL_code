@@ -1,5 +1,6 @@
 #ifndef MMPOOL_CUH
 #define MMPOOL_CUH
+#pragma once
 
 #include <thread>
 #include <unistd.h>

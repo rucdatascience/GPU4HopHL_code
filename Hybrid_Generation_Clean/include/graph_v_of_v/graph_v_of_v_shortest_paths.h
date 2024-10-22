@@ -1,4 +1,7 @@
+#ifndef GRAPH_V_OF_V_SHORTEST_PATHS_H
+#define GRAPH_V_OF_V_SHORTEST_PATHS_H
 #pragma once
+
 #include <vector>
 #include <numeric>
 #include <iostream>
@@ -13,7 +16,7 @@ struct graph_v_of_v_node_for_sp {
 	int index;
 	double priority_value;
 }; // define the node in the queue
-bool operator<(graph_v_of_v_node_for_sp const& x, graph_v_of_v_node_for_sp const& y) {
+bool static operator <(graph_v_of_v_node_for_sp const& x, graph_v_of_v_node_for_sp const& y) {
 	return x.priority_value > y.priority_value; // < is the max-heap; > is the min heap
 }
 typedef typename boost::heap::fibonacci_heap<graph_v_of_v_node_for_sp>::handle_type handle_t_for_graph_v_of_v_sp;
@@ -78,3 +81,5 @@ void graph_v_of_v_shortest_paths(graph_v_of_v<T>& input_graph, int source, std::
 	}
 
 }
+
+#endif

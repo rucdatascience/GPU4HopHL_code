@@ -1,5 +1,6 @@
+#ifndef GRAPH_V_OF_V_HOP_CONSTRAINED_SHORTEST_DISTANCE_H
+#define GRAPH_V_OF_V_HOP_CONSTRAINED_SHORTEST_DISTANCE_H
 #pragma once
-
 
 /* this func get all distances from source with hop constraint */
 
@@ -37,3 +38,5 @@ void graph_v_of_v_hop_constrained_shortest_distance(graph_v_of_v<T>& instance_gr
 		h++;
 	}
 }
+
+#endif

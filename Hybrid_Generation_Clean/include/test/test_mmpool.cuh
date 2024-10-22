@@ -1,5 +1,6 @@
 #ifndef TEST_MMPOOL_CUH
 #define TEST_MMPOOL_CUH
+#pragma once
 
 #include "definition/hub_def.h"
 #include "label/hop_constrained_two_hop_labels_v2.cuh"

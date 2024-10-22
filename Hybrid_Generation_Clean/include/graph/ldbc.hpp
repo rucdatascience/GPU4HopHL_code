@@ -1,6 +1,5 @@
 #ifndef LDBC_HPP
 #define LDBC_HPP
-
 #pragma once
 
 #include <vector>

@@ -1,6 +1,6 @@
 #include "label/gen_label.cuh"
 
-void test_cuda_error (string s) {
+void test_cuda_error (std::string s) {
     cudaError_t err = cudaGetLastError(); // Check for kernel memory request errors
     if (err != cudaSuccess) {
         printf("!INIT CUDA ERROR: %s %s\n", s.c_str(), cudaGetErrorString(err));
@@ -38,7 +38,7 @@ __device__ int query_dis_by_hash_table
 // Dynamic parallel query acceleration
 // u, v, d_size, d_has, d, label, hop, hop_cst;
 __global__ void query_parallel (int sv, int st, int sz, cuda_hashTable_v2<weight_type> *das, int *d, cuda_hashTable_v2<weight_type> *has,
-cuda_vector_v2<hub_type> *L_gpu, int thread_num, int tidd, int hop_now, int hop_cst, int *Num_L, pair<int, int> *L_push_back) {
+cuda_vector_v2<hub_type> *L_gpu, int thread_num, int tidd, int hop_now, int hop_cst, int *Num_L, std::pair<int, int> *L_push_back) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (tid < 0 || tid >= sz) {
@@ -64,7 +64,7 @@ cuda_vector_v2<hub_type> *L_gpu, int thread_num, int tidd, int hop_now, int hop_
 
 // Inserted into Label by L_push_back
 __global__ void Push_Back_L (int V, int thread_num, int start_id, int end_id, int hop, cuda_vector_v2<hub_type> *L_gpu,
-int *d_par, int *nid, int *Num_L, pair<int, int> *L_push_back, int *Num_T, pair<int, int> *T_push_back) {
+int *d_par, int *nid, int *Num_L, std::pair<int, int> *L_push_back, int *Num_T, std::pair<int, int> *T_push_back) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < 0 || tid >= V) {
         return;
@@ -88,7 +88,7 @@ int *d_par, int *nid, int *Num_L, pair<int, int> *L_push_back, int *Num_T, pair<
 
 // Inserted into T by T_push_back
 __global__ void Push_Back_T (int V, int thread_num, int start_id, int end_id, cuda_vector_v2<T_item> *T, 
-int *nid, int *Num_T, pair<int, int> *T_push_back) {
+int *nid, int *Num_T, std::pair<int, int> *T_push_back) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < 0 || tid >= thread_num) {
         return;
@@ -332,7 +332,7 @@ __global__ void gen_label_hsdl_v2 (int V, int thread_num, int hop_cst, int hop_n
 __global__ void gen_label_hsdl_v3
 (int V, int thread_num, int hop_cst, int hop_now, int* out_pointer, int* out_edge, int* out_edge_weight,
 cuda_vector_v2<hub_type> *L_gpu, cuda_hashTable_v2<weight_type> *Has, cuda_hashTable_v2<weight_type> *Das,
-cuda_vector_v2<T_item> *T0, int start_id, int end_id, int *d, int *d_par, int *nid, int *Num_L, pair<int, int> *L_push_back) {
+cuda_vector_v2<T_item> *T0, int start_id, int end_id, int *d, int *d_par, int *nid, int *Num_L, std::pair<int, int> *L_push_back) {
     
     // thread id
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -444,7 +444,7 @@ __global__ void add_timer (clock_t* tot, clock_t *t, int thread_num) {
 }
 
 // 生成 label 的过程
-void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v2 *info, vector<vector<hub_type_v2> >&L, vector<int>& nid_vec, int nid_vec_id) {
+void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v2 *info, std::vector<std::vector<hub_type_v2> >&L, std::vector<int>& nid_vec, int nid_vec_id) {
 
     cudaError_t err;
 
@@ -474,8 +474,8 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 
     int *Num_T = info->Num_T; // 测试用
     int *Num_L = info->Num_L; // 测试用
-    pair<int, int> *T_push_back = info->T_push_back;
-    pair<int, int> *L_push_back = info->L_push_back;
+    std::pair<int, int> *T_push_back = info->T_push_back;
+    std::pair<int, int> *L_push_back = info->L_push_back;
     
     // 编号越小的点，rank 越高
     // for (int i = 0; i < V; i ++){

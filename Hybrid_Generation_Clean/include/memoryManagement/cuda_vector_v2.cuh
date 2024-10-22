@@ -1,5 +1,6 @@
 #ifndef CUDA_VECTOR_V2_CUH
 #define CUDA_VECTOR_V2_CUH
+#pragma once
 
 #include "memoryManagement/mmpool.cuh"
 #include "memoryManagement/mmpool_v2.cuh"

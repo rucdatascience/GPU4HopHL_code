@@ -1,5 +1,6 @@
 #ifndef CUDA_HASHTABLE_V2_CUH
 #define CUDA_HASHTABLE_V2_CUH
+#pragma once
 
 #include <cassert>
 #include <cstdio>

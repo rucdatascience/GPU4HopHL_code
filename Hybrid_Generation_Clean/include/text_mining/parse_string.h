@@ -1,5 +1,6 @@
 #ifndef PARSE_STRING_CUH
 #define PARSE_STRING_CUH
+#pragma once
 
 #include <vector>
 #include <string>

@@ -1,5 +1,6 @@
 #ifndef CUDA_QUEUE_CUH
 #define CUDA_QUEUE_CUH
+#pragma once
 
 #include "definition/hub_def.h"
 #include "definition/mmpool_size.h"

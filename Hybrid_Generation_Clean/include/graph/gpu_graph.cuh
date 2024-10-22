@@ -1,5 +1,6 @@
 #ifndef GPU_GRAPH_CUH
 #define GPU_GRAPH_CUH
+#pragma once
 
 #include "definition/hub_def.h"
 #include "graph/graph_v_of_v.h"

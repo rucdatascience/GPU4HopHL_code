@@ -42,7 +42,7 @@ typedef typename boost::heap::fibonacci_heap<hop_constrained_two_hop_label>::han
 
 vector<vector<vector<pair<hop_constrained_node_handle, int>>>> Q_handle_priorities_599;
 
-void hop_constrained_clear_global_values() {
+static void hop_constrained_clear_global_values() {
 	vector<vector<hop_constrained_two_hop_label>>().swap(L_temp_599);
 	// vector<vector<vector<pair<int, int>>>>().swap(Temp_L_vk_599);
 	// vector<vector<pair<int, int>>>().swap(dist_hop_599);
@@ -51,7 +51,7 @@ void hop_constrained_clear_global_values() {
 	// queue<int>().swap(Qid_599);
 }
 
-void HSDL_thread_function(int v_k) {
+static void HSDL_thread_function(int v_k) {
 
 	if (labal_size_599 > max_labal_size_599)
 	{
@@ -218,7 +218,7 @@ void HSDL_thread_function(int v_k) {
 	mtx_599[max_N_ID_for_mtx_599 - 1].unlock();
 }
 
-void _2023WWW_thread_function(int v_k) {
+static void _2023WWW_thread_function(int v_k) {
 
 	if (labal_size_599 > max_labal_size_599)
 	{
@@ -364,7 +364,7 @@ void _2023WWW_thread_function(int v_k) {
 }
 
 /*sortL*/
-bool compare_hop_constrained_two_hop_label(hop_constrained_two_hop_label &i, hop_constrained_two_hop_label &j) {
+static bool compare_hop_constrained_two_hop_label(hop_constrained_two_hop_label &i, hop_constrained_two_hop_label &j) {
 	if (i.hub_vertex != j.hub_vertex) {
 		return i.hub_vertex < j.hub_vertex;
 	} else if (i.hop != j.hop) {
@@ -374,7 +374,7 @@ bool compare_hop_constrained_two_hop_label(hop_constrained_two_hop_label &i, hop
 	}
 }
 
-vector<vector<hop_constrained_two_hop_label>> hop_constrained_sortL(int num_of_threads) {
+static vector<vector<hop_constrained_two_hop_label>> hop_constrained_sortL(int num_of_threads) {
 
 	/*time complexity: O(V*L*logL), where L is average number of labels per
 	 * vertex*/
@@ -497,7 +497,7 @@ vector<vector<hop_constrained_two_hop_label> >& LL, vector<int>& nid_vec, int th
 }
 
 /*canonical_repair*/
-void hop_constrained_clean_L(hop_constrained_case_info &case_info, vector<vector<hop_constrained_two_hop_label> >& LL, int thread_num, int N) {
+static void hop_constrained_clean_L (hop_constrained_case_info &case_info, vector<vector<hop_constrained_two_hop_label> >& LL, int thread_num, int N) {
 	
 	auto &L = LL;
 	// int N = L.size();
@@ -587,7 +587,7 @@ void hop_constrained_clean_L(hop_constrained_case_info &case_info, vector<vector
 	case_info.canonical_repair_remove_label_ratio = (double)(label_size_before_canonical_repair_599 - label_size_after_canonical_repair_599) / label_size_before_canonical_repair_599;
 }
 
-void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info) {
+static void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info) {
 
 	// ----------------------------------- step 1: initialization -----------------------------------
 	auto begin = std::chrono::high_resolution_clock::now();
@@ -703,7 +703,7 @@ void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, 
 	hop_constrained_clear_global_values();
 }
 
-void hop_constrained_two_hop_labels_generation_init (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info) {
+static void hop_constrained_two_hop_labels_generation_init (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info) {
 	
 	V = input_graph.size();
 	global_upper_k = case_info.upper_k == 0 ? std::numeric_limits<int>::max() : case_info.upper_k;
@@ -738,7 +738,7 @@ void hop_constrained_two_hop_labels_generation_init (graph_v_of_v<int> &input_gr
 	}
 }
 
-void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info
+static void hop_constrained_two_hop_labels_generation (graph_v_of_v<int> &input_graph, hop_constrained_case_info &case_info
 , vector<vector<hop_constrained_two_hop_label> >&L, vector<int> &nid_vec) {
 
 	// ----------------------------------- step 1: initialization -----------------------------------

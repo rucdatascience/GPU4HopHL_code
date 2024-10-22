@@ -1,4 +1,7 @@
+#ifndef GRAPH_V_OF_V_GENERATE_RANDOM_GRAPH_H
+#define GRAPH_V_OF_V_GENERATE_RANDOM_GRAPH_H
 #pragma once
+
 #include <graph_v_of_v/graph_v_of_v_generate_random_graph.h>
 #include <boost/random.hpp>
 /*this function generates a random graph with vertex and edge weights, and this graph
@@ -80,3 +83,5 @@ graph_v_of_v<weight_type> graph_v_of_v_generate_random_graph (long long int V, l
 
 	return random_graph;
 }
+
+#endif

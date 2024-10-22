@@ -1,10 +1,13 @@
+#ifndef GRAPH_V_OF_V_UPDATE_VERTEXIDS_BY_DEGREES_LARGE_TO_SMALL_H
+#define GRAPH_V_OF_V_UPDATE_VERTEXIDS_BY_DEGREES_LARGE_TO_SMALL_H
 #pragma once
+
 #include <graph_v_of_v/graph_v_of_v.h>
 #include <unordered_map>
 
 using namespace std;
 
-bool compare_graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(const pair<int, int>& i, const pair<int, int>& j)
+static bool compare_graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(const pair<int, int>& i, const pair<int, int>& j)
 {
 	/*< is nearly 10 times slower than >*/
 	if (i.second == j.second) return i.first < j.first;
@@ -12,7 +15,7 @@ bool compare_graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(const pair<
 }
 
 template <typename weight_type>
-graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(graph_v_of_v<weight_type>& input_graph) {
+static graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(graph_v_of_v<weight_type>& input_graph) {
 
 	int N = input_graph.ADJs.size();
 	
@@ -42,7 +45,7 @@ graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_smal
 
 
 template <typename weight_type>
-graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_small_mock(graph_v_of_v<weight_type>& input_graph, vector<int>& is_mock) {
+static graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_small_mock(graph_v_of_v<weight_type>& input_graph, vector<int>& is_mock) {
 
 	int N = input_graph.ADJs.size();
 
@@ -125,7 +128,7 @@ graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_smal
 }
 
 template <typename weight_type>
-graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(graph_v_of_v<weight_type>& input_graph, vector<int>& vertexID_new_to_old) {
+static graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(graph_v_of_v<weight_type>& input_graph, vector<int>& vertexID_new_to_old) {
 
 	int N = input_graph.ADJs.size();
 	vertexID_new_to_old.resize(N);
@@ -154,3 +157,5 @@ graph_v_of_v<weight_type> graph_v_of_v_update_vertexIDs_by_degrees_large_to_smal
 
 	return output_graph;
 }
+
+#endif
