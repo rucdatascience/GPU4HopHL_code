@@ -168,13 +168,13 @@ void gpu_clean_init (graph_v_of_v<int> &input_graph, vector<vector<hop_constrain
     
     // long long *L_start = info_gpu.L_start;
 
-    cudaMallocManaged(&info_gpu->L_start, (V + 1) * sizeof(long long));
+    cudaMallocManaged(&info_gpu->L_start, (long long) (V + 1) * sizeof(long long));
     cudaDeviceSynchronize();
 
     long long point = 0;
     for (int i = 0; i < V; i++) {
         info_gpu->L_start[i] = point;
-        int _size = input_L[i].size();
+        long long _size = input_L[i].size();
         for (int j = 0; j < _size; j++) {
             L_flat.push_back(input_L[i][j]);
         }
@@ -183,7 +183,7 @@ void gpu_clean_init (graph_v_of_v<int> &input_graph, vector<vector<hop_constrain
     info_gpu->L_start[V] = point;
 
     int cnt = 0;
-    cudaMallocManaged(&info_gpu->node_id, info_gpu->L_start[V] * sizeof(int));
+    cudaMallocManaged(&info_gpu->node_id, (long long) info_gpu->L_start[V] * sizeof(int));
     cudaDeviceSynchronize();
     for (int i = 0; i < V; i++) {
         int _size = input_L[i].size();
@@ -193,27 +193,27 @@ void gpu_clean_init (graph_v_of_v<int> &input_graph, vector<vector<hop_constrain
     }
 
     hop_constrained_two_hop_label *L = nullptr;
-    cudaMallocManaged(&info_gpu->L, L_flat.size() * sizeof(hop_constrained_two_hop_label));
+    cudaMallocManaged(&info_gpu->L, (long long) L_flat.size() * sizeof(hop_constrained_two_hop_label));
     cudaDeviceSynchronize();
 
-    cudaMemcpy(info_gpu->L, L_flat.data(), L_flat.size() * sizeof(hop_constrained_two_hop_label), cudaMemcpyHostToDevice);
+    cudaMemcpy(info_gpu->L, L_flat.data(), (long long) L_flat.size() * sizeof(hop_constrained_two_hop_label), cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
 
-    cudaMallocManaged(&info_gpu->mark, L_flat.size() * sizeof(int));
-    cudaMemset(info_gpu->mark, 0, sizeof(int) * L_flat.size());
+    cudaMallocManaged(&info_gpu->mark, (long long) L_flat.size() * sizeof(int));
+    cudaMemset(info_gpu->mark, 0, (long long) sizeof(int) * L_flat.size());
 
-    cudaMallocManaged(&info_gpu->hash_array, sizeof(int) * tc * V * (K + 1));
+    cudaMallocManaged(&info_gpu->hash_array, (long long) sizeof(int) * tc * V * (K + 1));
     cudaDeviceSynchronize();
 
-    for (long long i = 0; i < (long long)tc * V * (K + 1); i++){
+    for (long long i = 0; i < (long long) tc * V * (K + 1); i++){
         info_gpu->hash_array[i] = INT_MAX;
     }
     
-    cudaMallocManaged(&info_gpu->nid, sizeof(int*) * graph_pool.graph_group.size());
-    cudaMallocManaged(&info_gpu->nid_size, sizeof(int) * graph_pool.graph_group.size());
+    cudaMallocManaged(&info_gpu->nid, (long long) sizeof(int*) * graph_pool.graph_group.size());
+    cudaMallocManaged(&info_gpu->nid_size, (long long) sizeof(int) * graph_pool.graph_group.size());
     cudaDeviceSynchronize();
     for (int j = 0; j < graph_pool.graph_group.size(); ++ j) {
-        cudaMallocManaged(&info_gpu->nid[j], sizeof(int) * graph_pool.graph_group[j].size());
+        cudaMallocManaged(&info_gpu->nid[j], (long long) sizeof(int) * graph_pool.graph_group[j].size());
         cudaDeviceSynchronize();
         info_gpu->nid_size[j] = graph_pool.graph_group[j].size();
         for (int k = 0; k < graph_pool.graph_group[j].size(); ++k) {
@@ -246,7 +246,6 @@ vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_
     // cudaEventRecord(start);
     int start_id, end_id, start_node_id, end_node_id;
     start_id = nid_size;
-    printf("shittt3!!!!\n");
     // 每一个 while 会清洗一块标签。
     while (start_id > 0) {
         end_id = start_id - 1;
@@ -263,15 +262,14 @@ vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_
         clean_kernel_v2 <<< (L_start[end_node_id + 1] - L_start[start_node_id] + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>>
         (V, K, thread_num, start_id, end_id, node_id, L, L_start, hash_array, mark, nid);
         cudaDeviceSynchronize();
-        printf("shittt4!!!!\n");
         clear_hash <<< (thread_num + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>>
         (V, K, thread_num, start_id, end_id, L, L_start, hash_array, mark, nid);
         cudaDeviceSynchronize();
     }
-    // cudaDeviceSynchronize();
+
     // clean_kernel <<< (tc + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>> (V, K, tc, L, L_start, hash_array, mark);
     // cudaDeviceSynchronize();
-    printf("shittt5!!!!\n");
+
     // 将L(csr)转为res(vector<vector>)
     for (int i = 0; i < nid_size; ++i) {
         results_gpu.emplace_back(pool_gpu.enqueue(
@@ -288,10 +286,9 @@ vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_
                         temp.hop = info_gpu->L[j].hop;
                         temp.distance = info_gpu->L[j].distance;
                         temp.parent_vertex = info_gpu->L[j].parent_vertex;
-                        res[node_id].emplace_back(temp);
+                        res[node_id].push_back(temp);
                     }
                 }
-                res[node_id].shrink_to_fit();
                 return 1;
             }));
     }
@@ -299,7 +296,6 @@ vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_
 	    result.get(); // all threads finish here
     }
 	results_gpu.clear();
-    printf("shittt6!!!!\n");
     // cudaEventRecord(stop);
     // cudaEventSynchronize(stop);
     

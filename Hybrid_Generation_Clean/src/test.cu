@@ -155,8 +155,8 @@ int main () {
     int iteration_source_times = 1000, iteration_terminal_times = 1000;
 
     // Sample diagram parameters
-    int V = 10000, E = 50000;
-    int Distributed_Graph_Num = 10;
+    int V = 200000, E = 1000000;
+    int Distributed_Graph_Num = 200;
     int G_max = V / Distributed_Graph_Num + 1;
     // int G_max = 1000;
     // int Distributed_Graph_Num = (V + G_max - 1) / G_max;
@@ -236,15 +236,6 @@ int main () {
         Distributed_Graph_Num = graph_pool.graph_group.size();
     }
     info_gpu->set_nid(Distributed_Graph_Num, graph_pool.graph_group);
-    // cudaMallocManaged(&info_gpu->nid, sizeof(int*) * Distributed_Graph_Num);
-    // cudaMallocManaged(&info_gpu->nid_size, sizeof(int) * Distributed_Graph_Num);
-    // for (int j = 0; j < Distributed_Graph_Num; ++ j) {
-    //     cudaMallocManaged(&info_gpu->nid[j], sizeof(int) * graph_pool.graph_group[j].size());
-    //     info_gpu->nid_size[j] = graph_pool.graph_group[j].size();
-    //     for (int k = 0; k < graph_pool.graph_group[j].size(); ++k) {
-    //         info_gpu->nid[j][k] = graph_pool.graph_group[j][k];
-    //     }
-    // }
     
     printf("G_max: %d\n",G_max);
 
@@ -340,7 +331,6 @@ int main () {
             printf("Clean Core Information: %lf, %d, %d\n", x.time_use, x.id, x.core_type);
             if (x.core_type == 0) { // core type is cpu
                 hop_constrained_clean_L_distributed(info_cpu, L_hybrid, graph_pool.graph_group[i], info_cpu.thread_num);
-                // hop_constrained_clean_L(info_cpu, L_hybrid, info_cpu.thread_num, V);
             } else {
                 gpu_clean(instance_graph, info_gpu, L_hybrid, thread_num_clean, i);
             }
@@ -379,6 +369,7 @@ int main () {
         printf("GPU Time Generation: %.6lf\n", info_gpu->time_generate_labels);
         printf("GPU Time Tranverse: %.6lf\n", info_gpu->time_traverse_labels);
         printf("Total Time Generation: %.6lf\n", time_generate_labels_total);
+        printf("Total Time Clean: %.6lf\n", time_clean_labels_total);
     }
     return 0;
 }
