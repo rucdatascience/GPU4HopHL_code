@@ -217,7 +217,9 @@ public:
 
 // for clean
     long long *L_start = nullptr;
+    long long *L_end = nullptr;
     int *node_id = nullptr;
+    int *nid_to_tid = nullptr;
     hop_constrained_two_hop_label *L = nullptr; // label on gpu
     int *mark = nullptr; // mark the label clean state
     int *hash_array = nullptr;

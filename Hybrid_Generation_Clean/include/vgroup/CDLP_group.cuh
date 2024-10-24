@@ -66,7 +66,7 @@ static void generate_Group_CDLP(graph_v_of_v<int> &instance_graph, std::vector<s
         if ((*it1).id == (*it2).id) {
             -- it2;
         }
-        if (it2 != se.end() && (*it1).id != (*it2).id) {
+        if (it2 != se.end() && (*it1).id != (*it2).id && (*it1).group_size + (*it2).group_size <= MAX_GROUP_SIZE) {
             group_union_unit a = (*it1), b = (*it2);
             a.group_size += b.group_size;
             a.group_node.insert(a.group_node.end(), b.group_node.begin(), b.group_node.end());

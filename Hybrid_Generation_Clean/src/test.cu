@@ -149,6 +149,7 @@ void GPU_HSDL_checker (vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &insta
 int main () {
     size_t free_byte, total_byte;
     cudaMemGetInfo(&free_byte, &total_byte);
+    printf("Device memory start: total %ld, free %ld\n", total_byte, free_byte);
 
     // Test frequency parameter
     int iteration_graph_times = 1;
@@ -157,7 +158,7 @@ int main () {
     // Sample diagram parameters
     int V = 200000, E = 1000000;
     int Distributed_Graph_Num = 200;
-    int G_max = V / Distributed_Graph_Num + 1;
+    int G_max = (V + Distributed_Graph_Num - 1) / Distributed_Graph_Num;
     // int G_max = 1000;
     // int Distributed_Graph_Num = (V + G_max - 1) / G_max;
 
@@ -175,7 +176,7 @@ int main () {
     int generate_new_graph = 1;
     int print_details = 1;
     int check_correctness = 1;
-    int use_cd = 0;
+    int use_cd = 1;
     int use_clean = 1;
     string data_path = "../data/simple_iterative_tests_100w.txt";
     
@@ -191,6 +192,8 @@ int main () {
     // gpu info
     info_gpu = new hop_constrained_case_info_v2();
     info_gpu->init(V, hop_cst, G_max, thread_num, graph_pool.graph_group);
+    cudaMemGetInfo(&free_byte, &total_byte);
+    printf("Device memory after init: total %ld, free %ld\n", total_byte, free_byte);
     info_gpu->hop_cst = hop_cst;
     info_gpu->thread_num = thread_num;
     printf("Init GPU_Info Successful!\n");
@@ -204,7 +207,7 @@ int main () {
         instance_graph = graph_v_of_v_generate_random_graph<int> (V, E, ec_min, ec_max, 1, boost_random_time_seed);
         instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
         instance_graph.txt_save("../data/simple_iterative_tests.txt");
-    }else{
+    } else {
         instance_graph.txt_read(data_path);
         instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
         V = instance_graph.size();
@@ -271,16 +274,14 @@ int main () {
     priority_queue<Executive_Core> pq_gen;
     for (int i = 0; i < CPU_Gen_Num; ++i) pq_gen.push(Executive_Core(i, 0, 0)); // id, time, cpu/gpu
     for (int i = 0; i < GPU_Gen_Num; ++i) pq_gen.push(Executive_Core(CPU_Gen_Num + i, 0, 1)); // id, time, cpu/gpu
-
     for (int i = 0; i < Distributed_Graph_Num; ++i) {
-        
         Executive_Core x = pq_gen.top();
         pq_gen.pop();
         auto begin = std::chrono::high_resolution_clock::now();
         printf("Gen Core Information: %lf, %d, %d\n", x.time_use, x.id, x.core_type);
         if (x.core_type == 0) { // core type is cpu
             hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L_hybrid, graph_pool.graph_group[i]);
-        }else{
+        } else {
             label_gen(csr_graph, info_gpu, L_hybrid, graph_pool.graph_group[i], i);
         }
         auto end = std::chrono::high_resolution_clock::now();
@@ -288,7 +289,6 @@ int main () {
         
         x.time_use += duration;
         pq_gen.push(x);
-
     }
     while (!pq_gen.empty()) {
         Executive_Core x = pq_gen.top();
@@ -298,12 +298,11 @@ int main () {
     }
     
     // Clear video memory
-    printf("Device memory start: total %ld, free %ld\n", total_byte, free_byte);
     cudaMemGetInfo(&free_byte, &total_byte);
     printf("Device memory before: total %ld, free %ld\n", total_byte, free_byte);
     info_gpu->destroy_L_cuda();
     csr_graph.destroy_csr_graph();
-    free(info_gpu);
+    // free(info_gpu);
     cudaMemGetInfo(&free_byte, &total_byte);
     printf("Device memory after: total %ld, free %ld\n", total_byte, free_byte);
 
@@ -313,33 +312,30 @@ int main () {
     }
 
     if (use_clean) {
-
         // Hybrid Clean
         priority_queue<Executive_Core> pq_clean;
         for (int i = 0; i < CPU_Clean_Num; ++i) pq_clean.push(Executive_Core(i, 0, 0)); // id, time, cpu/gpu
         for (int i = 0; i < GPU_Clean_Num; ++i) pq_clean.push(Executive_Core(CPU_Clean_Num + i, 0, 1)); // id, time, cpu/gpu
-
         if (GPU_Clean_Num) {
             gpu_clean_init(instance_graph, L_hybrid, info_gpu, graph_pool, thread_num, hop_cst);
         }
-
+        cudaMemGetInfo(&free_byte, &total_byte);
+        printf("Device memory after clean: total %ld, free %ld\n", total_byte, free_byte);
         for (int i = 0; i < Distributed_Graph_Num; ++i) {
-
             Executive_Core x = pq_clean.top();
             pq_clean.pop();
             auto begin = std::chrono::high_resolution_clock::now();
             printf("Clean Core Information: %lf, %d, %d\n", x.time_use, x.id, x.core_type);
             if (x.core_type == 0) { // core type is cpu
                 hop_constrained_clean_L_distributed(info_cpu, L_hybrid, graph_pool.graph_group[i], info_cpu.thread_num);
+                // hop_constrained_clean_L (info_cpu, L_hybrid, info_cpu.thread_num, V);
             } else {
                 gpu_clean(instance_graph, info_gpu, L_hybrid, thread_num_clean, i);
             }
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-            // printf("Clean Core Duration: %lf\n", duration);
             x.time_use += duration;
             pq_clean.push(x);
-
         }
         while (!pq_clean.empty()) {
             Executive_Core x = pq_clean.top();
@@ -371,5 +367,6 @@ int main () {
         printf("Total Time Generation: %.6lf\n", time_generate_labels_total);
         printf("Total Time Clean: %.6lf\n", time_clean_labels_total);
     }
+
     return 0;
 }

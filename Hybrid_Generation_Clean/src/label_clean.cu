@@ -71,26 +71,26 @@ __global__ void clean_kernel (int V, int K, int tc, hop_constrained_two_hop_labe
 }
 
 __global__ void clean_kernel_v2 (int V, int K, int tc, int start_id, int end_id, int *node_id, hop_constrained_two_hop_label *L, 
-long long *L_start, int *hash_array, int *mark, int *nidd) {
+long long *L_start, long long *L_end, int *nid_to_tid, int *hash_array, int *mark, int *nidd) {
 
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    long long tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     start_id = nidd[start_id], end_id = nidd[end_id];
 
-    if (tid < 0 || L_start[start_id] + tid >= L_start[end_id + 1]) {
+    if (tid < 0 || L_start[start_id] + tid >= L_end[end_id]) {
         return;
     }
 
     long long label_idx = L_start[start_id] + tid;
     int nid = node_id[label_idx];
     int v = L[label_idx].hub_vertex, h_v = L[label_idx].hop, d_v = L[label_idx].distance;
-    long long offset = (nid - start_id) * V * (K + 1);
+    long long offset = (long long) nid_to_tid[nid] * V * (K + 1);
     
     if (nid == v) {
         return;
     }
 
-    for (long long label_id = L_start[v]; label_id < L_start[v + 1]; ++label_id) {
+    for (long long label_id = L_start[v]; label_id < L_end[v]; ++label_id) {
         int vx = L[label_id].hub_vertex;
         if (vx == v) {
             continue;
@@ -102,7 +102,7 @@ long long *L_start, int *hash_array, int *mark, int *nidd) {
         }
 
         // long long offset2 = offset + vx * (K + 1);
-        int new_dis = (hash_array + offset)[vx * (K + 1) + h_v - h_vx];
+        int new_dis = (hash_array + offset) [vx * (K + 1) + h_v - h_vx];
         if (new_dis != INT_MAX) {
             new_dis = new_dis + d_vx;
             // update_dis = min(update_dis, new_dis);
@@ -114,7 +114,8 @@ long long *L_start, int *hash_array, int *mark, int *nidd) {
     }
 }
 
-__global__ void get_hash (int V, int K, int tc, int start_id, int end_id, hop_constrained_two_hop_label *L, long long *L_start, int *hash_array, int *mark, int *nid) {
+__global__ void get_hash (int V, int K, int tc, int start_id, int end_id, hop_constrained_two_hop_label *L, 
+long long *L_start, long long *L_end, int *nid_to_tid, int *hash_array, int *mark, int *nid) {
     
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < 0 || start_id + tid > end_id) {
@@ -122,8 +123,9 @@ __global__ void get_hash (int V, int K, int tc, int start_id, int end_id, hop_co
     }
     
     int node_id = nid[start_id + tid];
+    nid_to_tid[node_id] = tid;
     long long offset = tid * V * (K + 1);
-    for (long long label_idx = L_start[node_id]; label_idx < L_start[node_id + 1]; ++label_idx) {
+    for (long long label_idx = L_start[node_id]; label_idx < L_end[node_id]; ++label_idx) {
         int v = L[label_idx].hub_vertex;
         int h_v = L[label_idx].hop;
         int d_v = L[label_idx].distance;
@@ -138,7 +140,7 @@ __global__ void get_hash (int V, int K, int tc, int start_id, int end_id, hop_co
     return;
 }
 
-__global__ void clear_hash (int V, int K, int tc, int start_id, int end_id, hop_constrained_two_hop_label *L, long long *L_start, int *hash_array, int *mark, int *nid) {
+__global__ void clear_hash (int V, int K, int tc, int start_id, int end_id, hop_constrained_two_hop_label *L, long long *L_start, long long *L_end, int *hash_array, int *mark, int *nid) {
     
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < 0 || start_id + tid > end_id) {
@@ -147,7 +149,7 @@ __global__ void clear_hash (int V, int K, int tc, int start_id, int end_id, hop_
 
     int node_id = nid[start_id + tid];
     long long offset = tid * V * (K + 1);
-    for (long long label_idx = L_start[node_id]; label_idx < L_start[node_id + 1]; ++label_idx) {
+    for (long long label_idx = L_start[node_id]; label_idx < L_end[node_id]; ++label_idx) {
         int v = L[label_idx].hub_vertex;
         int h_v = L[label_idx].hop;
         int d_v = L[label_idx].distance;
@@ -169,28 +171,42 @@ void gpu_clean_init (graph_v_of_v<int> &input_graph, vector<vector<hop_constrain
     // long long *L_start = info_gpu.L_start;
 
     cudaMallocManaged(&info_gpu->L_start, (long long) (V + 1) * sizeof(long long));
+    cudaMallocManaged(&info_gpu->L_end, (long long) (V + 1) * sizeof(long long));
     cudaDeviceSynchronize();
 
     long long point = 0;
-    for (int i = 0; i < V; i++) {
-        info_gpu->L_start[i] = point;
-        long long _size = input_L[i].size();
-        for (int j = 0; j < _size; j++) {
-            L_flat.push_back(input_L[i][j]);
+    int x;
+    for (int i = 0; i < graph_pool.size(); ++i) {
+        for (int k = 0; k < graph_pool.graph_group[i].size(); ++k) {
+            x = graph_pool.graph_group[i][k];
+            info_gpu->L_start[x] = point;
+            int _size = input_L[x].size();
+            for (int j = 0; j < _size; j++) {
+                L_flat.push_back(input_L[x][j]);
+            }
+            point += _size;
+            info_gpu->L_end[x] = point;
         }
-        point += _size;
     }
-    info_gpu->L_start[V] = point;
 
     int cnt = 0;
-    cudaMallocManaged(&info_gpu->node_id, (long long) info_gpu->L_start[V] * sizeof(int));
+    cudaMallocManaged(&info_gpu->node_id, (long long) point * sizeof(int));
     cudaDeviceSynchronize();
-    for (int i = 0; i < V; i++) {
-        int _size = input_L[i].size();
-        for (int j = 0; j < _size; j++) {
-            info_gpu->node_id[cnt ++] = i;
+    for (int i = 0; i < graph_pool.size(); ++i) {
+        for (int k = 0; k < graph_pool.graph_group[i].size(); ++k) {
+            x = graph_pool.graph_group[i][k];
+            int _size = input_L[x].size();
+            for (int j = 0; j < _size; j++) {
+                info_gpu->node_id[cnt ++] = x;
+            }
         }
     }
+    // for (int i = 0; i < V; i++) {
+    //     int _size = input_L[i].size();
+    //     for (int j = 0; j < _size; j++) {
+    //         info_gpu->node_id[cnt ++] = i;
+    //     }
+    // }
 
     hop_constrained_two_hop_label *L = nullptr;
     cudaMallocManaged(&info_gpu->L, (long long) L_flat.size() * sizeof(hop_constrained_two_hop_label));
@@ -222,6 +238,7 @@ void gpu_clean_init (graph_v_of_v<int> &input_graph, vector<vector<hop_constrain
     }
     cudaDeviceSynchronize();
 
+    cudaMallocManaged(&info_gpu->nid_to_tid, (long long) V * sizeof(int));
 }
 
 void gpu_clean(graph_v_of_v<int> &input_graph, hop_constrained_case_info_v2 * info_gpu, 
@@ -231,6 +248,9 @@ vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_
     int K = info_gpu->hop_cst;
 
     long long *L_start = info_gpu->L_start;
+    long long *L_end = info_gpu->L_end;
+
+    int *nid_to_tid = info_gpu->nid_to_tid;
     int *node_id = info_gpu->node_id;
     hop_constrained_two_hop_label *L = info_gpu->L;
     int *mark = info_gpu->mark;
@@ -255,16 +275,18 @@ vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_
         start_node_id = nid[start_id];
 
         // printf("start_id, end_id: %d %d\n", start_id, end_id);
-
         get_hash <<< (thread_num + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>>
-        (V, K, thread_num, start_id, end_id, L, L_start, hash_array, mark, nid);
+        (V, K, thread_num, start_id, end_id, L, L_start, L_end, nid_to_tid, hash_array, mark, nid);
         cudaDeviceSynchronize();
-        clean_kernel_v2 <<< (L_start[end_node_id + 1] - L_start[start_node_id] + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>>
-        (V, K, thread_num, start_id, end_id, node_id, L, L_start, hash_array, mark, nid);
+        
+        clean_kernel_v2 <<< (L_end[end_node_id] - L_start[start_node_id] + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>>
+        (V, K, thread_num, start_id, end_id, node_id, L, L_start, L_end, nid_to_tid, hash_array, mark, nid);
         cudaDeviceSynchronize();
+        
         clear_hash <<< (thread_num + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>>
-        (V, K, thread_num, start_id, end_id, L, L_start, hash_array, mark, nid);
+        (V, K, thread_num, start_id, end_id, L, L_start, L_end, hash_array, mark, nid);
         cudaDeviceSynchronize();
+        
     }
 
     // clean_kernel <<< (tc + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK >>> (V, K, tc, L, L_start, hash_array, mark);
@@ -276,7 +298,7 @@ vector<vector<hop_constrained_two_hop_label>> &res, int thread_num, int nid_vec_
             [i, nid_vec_id, &res, &info_gpu] { // pass const type value j to thread; [] can be empty
                 int node_id = info_gpu->nid[nid_vec_id][i];
                 long long start = info_gpu->L_start[node_id];
-                long long end = info_gpu->L_start[node_id + 1];
+                long long end = info_gpu->L_end[node_id];
 
                 res[node_id].clear();
                 for (long long j = start; j < end; ++j) {

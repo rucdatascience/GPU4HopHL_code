@@ -36,13 +36,15 @@ public:
 static std::vector<std::future<int>> results_gpu;
 static ThreadPool pool_gpu(100);
 
-__global__ void get_hash (int V, int K, int tc, int start_id, int end_id, hop_constrained_two_hop_label *L, long long *L_start, int *hash_array, int *mark);
+__global__ void get_hash (int V, int K, int tc, int start_id, int end_id, hop_constrained_two_hop_label *L, long long *L_start, long long *L_end, int *nid_to_tid, int *hash_array, int *mark);
+
+__global__ void clear_hash (int V, int K, int tc, int start_id, int end_id, hop_constrained_two_hop_label *L, long long *L_start, long long *L_end, int *hash_array, int *mark, int *nid);
 
 __device__ int query_label (hop_constrained_two_hop_label* L, long long start, long long end, int i, int h_v, int* Lc_hashed, int V, int K);
 
 __global__ void clean_kernel (int V, int K, int tc, hop_constrained_two_hop_label* L, long long* L_start, int* hash_array,int *mark);
 
-__global__ void clean_kernel_v2 (int V, int K, int tc, int start_id, int end_id, int *node_id, hop_constrained_two_hop_label *L, long long *L_start, int *hash_array, int *mark);
+__global__ void clean_kernel_v2 (int V, int K, int tc, int start_id, int end_id, int *node_id, hop_constrained_two_hop_label *L, long long *L_start, long long *L_end, int *hash_array, int *mark);
 
 void gpu_clean_init (graph_v_of_v<int> &input_graph, vector<vector<hop_constrained_two_hop_label>> &input_L, hop_constrained_case_info_v2 * info_gpu, Graph_pool<int>& graph_pool, int tc, int K);
 
