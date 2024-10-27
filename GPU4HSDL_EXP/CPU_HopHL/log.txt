@@ -4,3 +4,34 @@ read success
 ./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.e 3 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
 read start
 read success
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.e 4 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.e 2 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.e 3 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.e 4 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.e 2 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.e 3 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.e 4 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.e 2 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.e 3 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.e 4 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+read start
+read success
+测试完成，结果已写入 /home/pengchang/GPU4HSDL_EXP/results3.csv 文件。

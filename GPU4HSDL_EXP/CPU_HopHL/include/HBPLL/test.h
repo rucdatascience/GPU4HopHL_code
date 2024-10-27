@@ -180,11 +180,11 @@ void dijkstra_hopconstrained(const std::string dataset, const std::string query_
         if (!(iss >> source >> terminal)) {
             break;
         }
-        if(V>1000000)
+        if(1)
         {
             results.emplace_back(pool.enqueue([&instance_graph, source, upper_k] {
-                std::vector<int> distances(instance_graph.size());
-                graph_v_of_v_hop_constrained_shortest_distance<int>(instance_graph, source, upper_k, distances);
+                //std::vector<int> distances(instance_graph.size());
+                graph_v_of_v_hop_constrained_shortest_distance_local<int>(instance_graph, source, upper_k);
             }));
         }
         else{

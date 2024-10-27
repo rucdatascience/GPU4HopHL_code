@@ -1,0 +1,11 @@
+algo,type,data_set,K,index_time(s),size(MB),before_clean_size(MB),query_time(ms),before_clean_query_time(ms),clean_time(s)
+Hybrid,GPU,facebook_clean_data,2,4.24049,40020397,45692238,760.545,957.851,1.06413
+Hybrid,GPU,facebook_clean_data,3,14.7569,119001831,312942416,1988.82,3887.81,9.58348
+Hybrid,GPU,facebook_clean_data,4,39.5489,159267617,634526770,2799.65,7558.73,18.9908
+Hybrid,GPU,git_web_ml,2,1.13291,2940851,3846131,147.384,121.433,0.190506
+Hybrid,GPU,git_web_ml,3,4.89144,6677006,23187007,195.228,633.356,0.2498
+Hybrid,GPU,git_web_ml,4,8.13498,8511010,51084623,259.756,1398.26,0.33589
+Hybrid,GPU,twitch,2,1.72822,3693558,4507579,136.547,156.38,0.244407
+Hybrid,GPU,twitch,3,2.17377,6790073,13088330,163.396,286.63,0.329057
+Hybrid,GPU,twitch,4,5.29206,9872891,20028305,254.652,474.05,0.293506
+

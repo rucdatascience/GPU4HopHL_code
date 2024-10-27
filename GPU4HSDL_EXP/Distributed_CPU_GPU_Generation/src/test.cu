@@ -164,7 +164,7 @@ void GPU_HSDL_checker (vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &insta
 
 void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two_hop_label> >&LL, graph_v_of_v<int> &instance_graph, int upper_k, Res& result, int before_clean) {
     
-    const int ITERATIONS = 100;  // 进行100次完整的查询操作
+    const int ITERATIONS = 10;  // 进行100次完整的查询操作
 
     long long total_time = 0;  // 累计所有查询的时间
 
@@ -196,7 +196,7 @@ void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two
             
             if(lines%10000==0)
             {
-                printf("size1: %d,size2: %d, total time now: %lld,match count: %lld\n\n",LL[source].size(),LL[terminal].size(),time,match_count);
+                //printf("size1: %d,size2: %d, total time now: %lld,match count: %lld\n\n",LL[source].size(),LL[terminal].size(),time,match_count);
             }
         }
         // auto end = std::chrono::steady_clock::now();

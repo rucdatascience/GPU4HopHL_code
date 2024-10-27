@@ -1,0 +1,199 @@
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.e 2 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+init cpu_info successful!
+init gpu_info successful!
+generation graph successful!
+time_generate_labels_total: 1.051187
+time_generate_labels_total: 1.051359
+time_generate_labels_total: 1.051555
+time_generate_labels_total: 1.060478
+time_generate_labels_total: 2.307490
+total time 81305059255
+Total Lable Size: 44170843.000000
+CPU Time Generation: 2.174913
+CPU Time Tranverse: 0.126509
+CPU Time Init: 0.003433
+CPU Time Clear: 0.000000
+GPU Time Generation: 1.358415
+GPU Time Tranverse: 2.596944
+Total Time Generation: 2.307490
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.e 3 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+init cpu_info successful!
+init gpu_info successful!
+generation graph successful!
+time_generate_labels_total: 5.847242
+time_generate_labels_total: 5.854000
+time_generate_labels_total: 5.855290
+time_generate_labels_total: 5.855949
+time_generate_labels_total: 14.891641
+total time 391545777882
+Total Lable Size: 312214859.000000
+CPU Time Generation: 14.426522
+CPU Time Tranverse: 0.457945
+CPU Time Init: 0.003357
+CPU Time Clear: 0.000000
+GPU Time Generation: 16.937753
+GPU Time Tranverse: 6.164863
+Total Time Generation: 14.891641
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.e 4 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+init cpu_info successful!
+init gpu_info successful!
+generation graph successful!
+time_generate_labels_total: 27.601443
+time_generate_labels_total: 27.609468
+time_generate_labels_total: 27.609606
+time_generate_labels_total: 27.611411
+time_generate_labels_total: 32.924712
+total time 83976606704
+Total Lable Size: 730196982.000000
+CPU Time Generation: 32.468862
+CPU Time Tranverse: 0.449747
+CPU Time Init: 0.001913
+CPU Time Clear: 0.000000
+GPU Time Generation: 93.709229
+GPU Time Tranverse: 16.444810
+Total Time Generation: 32.924712
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.e 2 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+init cpu_info successful!
+init gpu_info successful!
+generation graph successful!
+time_generate_labels_total: 0.288747
+time_generate_labels_total: 0.289125
+time_generate_labels_total: 0.289309
+time_generate_labels_total: 0.296771
+time_generate_labels_total: 0.819977
+total time 1651791833
+Total Lable Size: 3510746.000000
+CPU Time Generation: 0.777589
+CPU Time Tranverse: 0.036074
+CPU Time Init: 0.003252
+CPU Time Clear: 0.000000
+GPU Time Generation: 0.404804
+GPU Time Tranverse: 0.630590
+Total Time Generation: 0.819977
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.e 3 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+init cpu_info successful!
+init gpu_info successful!
+generation graph successful!
+time_generate_labels_total: 0.409986
+time_generate_labels_total: 0.420933
+time_generate_labels_total: 0.421084
+time_generate_labels_total: 0.423520
+time_generate_labels_total: 3.572742
+total time 4715775389
+Total Lable Size: 14203649.000000
+CPU Time Generation: 3.500810
+CPU Time Tranverse: 0.066628
+CPU Time Init: 0.003444
+CPU Time Clear: 0.000000
+GPU Time Generation: 0.563202
+GPU Time Tranverse: 0.968835
+Total Time Generation: 3.572742
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.e 4 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+init cpu_info successful!
+init gpu_info successful!
+generation graph successful!
+time_generate_labels_total: 0.515179
+time_generate_labels_total: 0.521292
+time_generate_labels_total: 0.521603
+time_generate_labels_total: 1.439986
+time_generate_labels_total: 7.223287
+total time 9262857113
+Total Lable Size: 38272344.000000
+CPU Time Generation: 7.128182
+CPU Time Tranverse: 0.088684
+CPU Time Init: 0.003886
+CPU Time Clear: 0.000000
+GPU Time Generation: 1.836563
+GPU Time Tranverse: 1.043382
+Total Time Generation: 7.223287
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.e 2 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+init cpu_info successful!
+init gpu_info successful!
+generation graph successful!
+time_generate_labels_total: 0.276882
+time_generate_labels_total: 0.281136
+time_generate_labels_total: 0.282990
+time_generate_labels_total: 0.283846
+time_generate_labels_total: 0.285699
+total time 1412660351
+Total Lable Size: 4605575.000000
+CPU Time Generation: 0.229662
+CPU Time Tranverse: 0.024709
+CPU Time Init: 0.017415
+CPU Time Clear: 0.000000
+GPU Time Generation: 0.450276
+GPU Time Tranverse: 0.537542
+Total Time Generation: 0.285699
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.e 3 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+init cpu_info successful!
+init gpu_info successful!
+generation graph successful!
+time_generate_labels_total: 0.511293
+time_generate_labels_total: 0.512903
+time_generate_labels_total: 0.519178
+time_generate_labels_total: 0.520223
+time_generate_labels_total: 1.254327
+total time 3661920925
+Total Lable Size: 16206064.000000
+CPU Time Generation: 1.208442
+CPU Time Tranverse: 0.040663
+CPU Time Init: 0.003366
+CPU Time Clear: 0.000000
+GPU Time Generation: 0.896216
+GPU Time Tranverse: 1.042345
+Total Time Generation: 1.254327
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.e 4 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+init cpu_info successful!
+init gpu_info successful!
+generation graph successful!
+time_generate_labels_total: 0.990361
+time_generate_labels_total: 0.995870
+time_generate_labels_total: 0.997222
+time_generate_labels_total: 1.147880
+time_generate_labels_total: 2.669931
+total time 6966969256
+Total Lable Size: 34360304.000000
+CPU Time Generation: 2.602330
+CPU Time Tranverse: 0.061323
+CPU Time Init: 0.003954
+CPU Time Clear: 0.000000
+GPU Time Generation: 2.495610
+GPU Time Tranverse: 1.508368
+Total Time Generation: 2.669931
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.e 2 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+init cpu_info successful!
+init gpu_info successful!
+generation graph successful!
+time_generate_labels_total: 8.582715
+time_generate_labels_total: 8.583602
+time_generate_labels_total: 8.605782
+time_generate_labels_total: 8.606113
+time_generate_labels_total: 62.037385
+total time 13490268455
+Total Lable Size: 229543081.000000
+CPU Time Generation: 61.105979
+CPU Time Tranverse: 0.917504
+CPU Time Init: 0.002135
+CPU Time Clear: 0.000000
+GPU Time Generation: 12.119693
+GPU Time Tranverse: 20.277808
+Total Time Generation: 62.037385
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.e 3 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+init cpu_info successful!
+init gpu_info successful!
+generation graph successful!
+time_generate_labels_total: 66.025775
+time_generate_labels_total: 66.042040
+time_generate_labels_total: 66.046844
+time_generate_labels_total: 66.059312
+time_generate_labels_total: 156.509498
+total time 63412468063
+Total Lable Size: 1867293228.000000
+CPU Time Generation: 155.652141
+CPU Time Tranverse: 0.848023
+CPU Time Init: 0.002157
+CPU Time Clear: 0.000000
+GPU Time Generation: 201.292319
+GPU Time Tranverse: 60.507520
+Total Time Generation: 156.509498
+./build/bin/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.e 4 0 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1

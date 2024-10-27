@@ -133,6 +133,65 @@ void hop_constrained_check_correctness(hop_constrained_case_info &case_info, gra
 	}
 }
 
+// void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two_hop_label> >&LL, graph_v_of_v<int> &instance_graph, int upper_k, Res& result, int before_clean) {
+    
+//     const int ITERATIONS = 100;  // 进行100次完整的查询操作
+
+//     long long total_time = 0;  // 累计所有查询的时间
+
+//     for (int iter = 0; iter < ITERATIONS; ++iter) {
+//         std::ifstream in(query_path);  // 每次循环重新打开文件
+//         if (!in) {
+//             std::cerr << "Cannot open input file: " << query_path << "\n";
+//             return;
+//         }
+
+//         std::string header;
+//         std::getline(in, header); // 跳过标题行
+
+//         int source = 0, terminal = 0;
+//         long long time = 0;
+//         int lines = 0;
+//         long long match_count = 0;//实际计算次数
+//         volatile long long dis=0;
+//         // 执行一次完整的文件查询操作
+//         //auto begin = std::chrono::steady_clock::now();
+//         while (in >> source >> terminal) {
+//             lines++;
+            
+//             auto begin = std::chrono::steady_clock::now();
+//             // 每对 source 和 terminal 执行一次查询
+//             dis+= hop_constrained_extract_distance(LL, source, terminal, upper_k);
+//             auto end = std::chrono::steady_clock::now();
+//             time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
+            
+//             if(lines%10000==0)
+//             {
+//                 printf("size1: %d,size2: %d, total time now: %lld,match count: %lld\n\n",LL[source].size(),LL[terminal].size(),time,match_count);
+//             }
+//         }
+//         // auto end = std::chrono::steady_clock::now();
+//         // time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
+
+//         // 验证查询行数是否符合预期
+//         if (lines != 100000) {
+//             std::cerr << "Query error: Expected 100000 lines, but got " << lines << "\n";
+//         }
+
+//         total_time += time;  // 将每次的查询时间累加
+        
+//     }
+
+//     // 计算平均查询时间
+//     if (before_clean == 1) {
+       
+//         result.before_clean_query_time = total_time / ITERATIONS / 1e6;  // 总时间除以ITERATIONS，转换为ms
+//     } else {
+//         printf("total time %ld\n",total_time);
+//         result.query_time = total_time / ITERATIONS / 1e6;  // 总时间除以ITERATIONS，转换为ms
+//     }
+// }
+
 void test_HSDL()
 {
 
