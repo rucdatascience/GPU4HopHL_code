@@ -494,6 +494,10 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     // Auxiliary variable, it is not convenient to directly detect whether T is empty
     int iter = 0;
     int start_id, end_id;
+    err = cudaGetLastError(); // 检查内核内存申请错误
+    if (err != cudaSuccess) {
+        printf("CUDA ERROR2: %s\n", cudaGetErrorString(err));
+    }
 
     // 计时
     cudaEvent_t start, stop;
@@ -578,10 +582,12 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
         start_time = clock();
         if (iter % 2 == 1) {
             // 清洗 T 数组
-            clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T0);
+            //clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T0);
+            clear_T <<< dimGrid_G_max, dimBlock >>> (vertex_num, info->T0);
         }else{
             // 清洗 T 数组
-            clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T1);
+            //clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T1);
+            clear_T <<< dimGrid_G_max, dimBlock >>> (vertex_num, info->T1);
         }
         cudaDeviceSynchronize();
         end_time = clock();
@@ -596,7 +602,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
 
     err = cudaGetLastError(); // 检查内核内存申请错误
     if (err != cudaSuccess) {
-        printf("!INIT CUDA ERROR3: %s\n", cudaGetErrorString(err));
+        printf("CUDA ERROR3: %s\n", cudaGetErrorString(err));
     }
     
     // timer record
@@ -613,30 +619,6 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     auto begin = std::chrono::high_resolution_clock::now();
     long long label_size = 0;
     
-    // int cpu_thread_num = 100;
-    // ThreadPool pool(cpu_thread_num);
-	// std::vector<std::future<int>> results;
-    // for (int q = 0; q < cpu_thread_num; ++q) {
-    //     results.emplace_back(pool.enqueue(
-	// 		[q, cpu_thread_num, V, &L, &nid_vec, info] {
-    //         for (int v = q; v < V; v += cpu_thread_num) {
-    //             for (int i = 0; i < info->L_cuda[v].blocks_num; ++i) {
-    //                 int block_id = info->L_cuda[v].block_idx_array[i];
-    //                 int block_siz = info->L_cuda[v].pool->get_block_size_host(block_id);
-    //                 for (int j = 0; j < block_siz; ++j) {
-    //                     hub_type* x = info->L_cuda[v].pool->get_node_host(block_id, j);
-    //                     L[v].push_back({nid_vec[x->hub_vertex], 0, x->hop, x->distance});
-    //                     // L[v].insert(L[v].end(), {nid_vec[x->hub_vertex], 0, x->hop, x->distance});
-    //                 }
-    //             }
-    //         }
-    //         return 1;
-    //     }));
-    // }
-    // for (auto &&result : results){
-	// 	result.get();
-    // }
-    // results.clear();
 
     for (int v = 0; v < V; ++v) {
         for (int i = 0; i < info->L_cuda[v].blocks_num; ++i) {
@@ -663,7 +645,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     info->time_traverse_labels += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
     
     info->label_size += label_size / (double)V;
-    printf("average label size: %.6lf\n", label_size / (double)V);
+    //printf("average label size: %.6lf\n", label_size / (double)V);
     // printf("Generation GPU end!\n");
     
     return;

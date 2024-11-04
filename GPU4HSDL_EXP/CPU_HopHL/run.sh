@@ -2,8 +2,8 @@
 #!/bin/bash
 
 # 设置参数
-data_dir="/home/pengchang/GPU4HSDL_EXP/new-data/test2"          # 数据文件夹路径
-output="/home/pengchang/GPU4HSDL_EXP/results3.csv"         # 输出文件名
+data_dir="/home/pengchang/GPU4HSDL_EXP/new-data/test_dblp"          # 数据文件夹路径
+output="/home/pengchang/GPU4HSDL_EXP/result_HSDL.csv"         # 输出文件名
 
 # 清空已有的结果文件并写入表头
 
@@ -21,8 +21,8 @@ for dataset_dir in "$data_dir"/*; do
             query_path=$(ls $query_file)
 
             # 运行测试
-            for algo in 2; do  # algo 取值为 0 和 1
-                for k in $(seq 2 4); do  # upper_k 从 2 到 4
+            for algo in 0; do  # algo 取值为 0 和 1
+                for k in $(seq 3 3); do  # upper_k 从 2 到 4
                     echo "./build/test $dataset_file $k $algo $query_file $output 1"
                     ./build/test "$dataset" "$k" "$algo" "$query_path" "$output" 1 # 运行 C++ 程序
                 done

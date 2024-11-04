@@ -39,7 +39,7 @@ public:
 
     ~ hop_constrained_case_info () {
         mmpool_labels->~mmpool();
-        cudaFree(mmpool_labels);
+        //cudaFree(mmpool_labels);
     };
     
     void init_group (std::vector<int> &group, graph_v_of_v<disType> &G, int hop_cst) {
