@@ -41,7 +41,9 @@ public:
     int thread_num = 1;
     int hop_cst = 0;
     int Distributed_Graph_Num = 0;
-
+    int use_2023WWW_GPU_version = 0;
+    int use_new_algo = 0;
+    
     /*running time records*/
 	double time_initialization = 0;
 	double time_generate_labels = 0;

@@ -107,6 +107,8 @@ void CDLP_GPU(int N, CSR_graph<int>& input_graph, std::vector<int>& res, int MAX
     int CD_ITERATION = max_iterations; // fixed number of iterations
     long long E = input_graph.E_all; // number of edges in the graph
 
+    printf("N, E: %d, %d\n", N, E);
+
     int *community_size;
     cudaMallocManaged((void**)&community_size, N * sizeof(int));
     cudaMemset(community_size, 0, N * sizeof(int));
@@ -115,16 +117,15 @@ void CDLP_GPU(int N, CSR_graph<int>& input_graph, std::vector<int>& res, int MAX
     cudaMallocManaged((void**)&labels, N * sizeof(int));
     cudaMallocManaged((void**)&prop_labels, E * sizeof(int));
     cudaMallocManaged((void**)&new_prop_labels, E * sizeof(int));
-
     cudaDeviceSynchronize(); // synchronize, ensure the cudaMalloc is complete
+    
     cudaError_t cuda_status = cudaGetLastError();
-    if (cuda_status != cudaSuccess) // use the cudaGetLastError to check for possible cudaMalloc errors
-    {
+    if (cuda_status != cudaSuccess) { // use the cudaGetLastError to check for possible cudaMalloc errors
         fprintf(stderr, "Cuda malloc failed: %s\n", cudaGetErrorString(cuda_status));
         return;
     }
 
-    Label_init<<<init_label_block, init_label_thread>>>(labels, all_pointer, N); // initialize all labels at once with GPU
+    Label_init <<<init_label_block, init_label_thread>>> (labels, all_pointer, N); // initialize all labels at once with GPU
 
     cudaDeviceSynchronize(); // synchronize, ensure the label initialization is complete
     cuda_status = cudaGetLastError();

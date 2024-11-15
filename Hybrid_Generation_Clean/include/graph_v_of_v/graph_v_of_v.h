@@ -240,6 +240,62 @@ void graph_v_of_v<weight_type>::txt_save(std::string save_name) {
 	outputFile << "EOF" << std::endl;
 }
 
+// #include <sstream>
+// template <typename weight_type>
+// void graph_v_of_v<weight_type>::txt_read(std::string save_name) {
+
+// 	graph_v_of_v<weight_type>::clear();
+
+// 	std::string line_content;
+// 	std::ifstream myfile(save_name); // open the file
+// 	if (myfile.is_open())            // if the file is opened successfully
+// 	{
+// 		getline(myfile, line_content);
+// 		// 解析表头，获取顶点数，ADJs.resize(n)
+// 		{
+// 			size_t pos = line_content.find("|V| =");
+// 			if (pos != std::string::npos) {
+// 				pos += 5; // 移动到 "|V| =" 后面的数字位置
+// 				std::istringstream iss(line_content.substr(pos));
+// 				int V;
+// 				if (iss >> V) {
+// 					ADJs.resize(V);
+// 				} else {
+// 					std::cerr << "|V| " << std::endl;
+// 					// 处理错误，例如退出或设置默认值
+// 					exit(1);
+// 				}
+// 			} else {
+// 				std::cerr << "'|V| ='" << std::endl;
+// 				// 处理错误，例如退出或设置默认值
+// 				exit(1);
+// 			}
+// 		}
+
+// 		while (getline(myfile, line_content)) // read file line by line
+// 		{
+// 			std::vector<std::string> Parsed_content = parse_string(line_content, " ");
+// 			//printf("parse string success\n");
+// 			if (Parsed_content.size() ==
+// 				3) // Ensure the line has exactly three elements
+// 			{
+// 				int v1 = std::stoi(Parsed_content[0]);
+// 				int v2 = std::stoi(Parsed_content[1]);
+// 				weight_type ec = static_cast<weight_type>(std::stod(Parsed_content[2]));
+// 				graph_v_of_v<weight_type>::add_edge(v1, v2, ec);
+// 			}
+// 		}
+
+// 		myfile.close(); // close the file
+// 	} else {
+// 		std::cout << "Unable to open file " << save_name << std::endl
+// 					<< "Please check the file location or file name."
+// 					<< std::endl; // throw an error message
+// 		getchar();              // keep the console window
+// 		exit(1);                // end the program
+// 	}
+// }
+
 template <typename weight_type>
 void graph_v_of_v<weight_type>::txt_read(std::string save_name) {
 

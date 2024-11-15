@@ -13,6 +13,8 @@ using std::vector;
 template <typename T> class Graph_pool {
 public:
     vector<vector<T> > graph_group;
+    vector<vector<T> > graph_group_bfs;
+    
     int next_graph = 0;
     std::mutex mtx;
 

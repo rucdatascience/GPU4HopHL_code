@@ -458,156 +458,159 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     int vertex_num = info->nid_size[nid_vec_id];
     
     // thread_num = min(thread_num, vertex_num);
+    if (info->use_new_algo) {
+        int dimGrid_thread, dimGrid_V, dimGrid_G_max, dimBlock = 64;
+        dimGrid_V = (V + dimBlock - 1) / dimBlock;
+        dimGrid_thread = (thread_num + dimBlock - 1) / dimBlock;
+        dimGrid_G_max = (vertex_num + dimBlock - 1) / dimBlock;
 
-    int dimGrid_thread, dimGrid_V, dimGrid_G_max, dimBlock = 64;
-    dimGrid_V = (V + dimBlock - 1) / dimBlock;
-    dimGrid_thread = (thread_num + dimBlock - 1) / dimBlock;
-    dimGrid_G_max = (vertex_num + dimBlock - 1) / dimBlock;
+        // printf("V, E, vertex_num: %d, %d, %d\n", V, E, vertex_num);
 
-    // printf("V, E, vertex_num: %d, %d, %d\n", V, E, vertex_num);
+        // 准备 info
+        cuda_hashTable_v2<weight_type> *L_hash = info->L_hash;
+        cuda_hashTable_v2<weight_type> *D_hash = info->D_hash;
+        int *D_vector = info->D_vector;
+        int *D_par = info->D_pare;
 
-    // 准备 info
-    cuda_hashTable_v2<weight_type> *L_hash = info->L_hash;
-    cuda_hashTable_v2<weight_type> *D_hash = info->D_hash;
-    int *D_vector = info->D_vector;
-    int *D_par = info->D_pare;
-
-    int *Num_T = info->Num_T; // 测试用
-    int *Num_L = info->Num_L; // 测试用
-    std::pair<int, int> *T_push_back = info->T_push_back;
-    std::pair<int, int> *L_push_back = info->L_push_back;
-    
-    // 编号越小的点，rank 越高
-    // for (int i = 0; i < V; i ++){
-    //     printf("degree %d, %d\n", i, out_pointer[i + 1] - out_pointer[i]);
-    // }
-    
-    // 测试 cuda_vector 和 cuda_hash 的部分
-    // test_mmpool(V, thread_num, 2, info, L_hash);
-    int *nid = info->nid[nid_vec_id];
-
-    clear_L <<< dimGrid_V, dimBlock >>> (V, info->L_cuda);
-    clear_T <<< dimGrid_G_max, dimBlock >>> (vertex_num, info->T0);
-    clear_T <<< dimGrid_G_max, dimBlock >>> (vertex_num, info->T1);
-    init_T <<< dimGrid_G_max, dimBlock >>> (vertex_num, info->T0, info->L_cuda, nid);
-
-    // Auxiliary variable, it is not convenient to directly detect whether T is empty
-    int iter = 0;
-    int start_id, end_id;
-
-    // 计时
-    cudaEvent_t start, stop;
-    clock_t start_time, end_time;
-    double time1 = 0.0, time2 = 0.0, time3 = 0.0, time4 = 0.0;
-    float elapsedTime = 0.0;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start, 0);
-    while (1) {
-        if (iter ++ >= hop_cst) break;
-        // iter = 1 -> 生成 跳数 1
-        // iter = 2 -> 生成 跳数 2
-        // iter = 3 -> 生成 跳数 3
-        // iter = 4 -> 生成 跳数 4
-        // iter = 5 -> 生成 跳数 5
+        int *Num_T = info->Num_T; // 测试用
+        int *Num_L = info->Num_L; // 测试用
+        std::pair<int, int> *T_push_back = info->T_push_back;
+        std::pair<int, int> *L_push_back = info->L_push_back;
         
-        // printf("iteration_hop: %d\n", iter);
+        // 编号越小的点，rank 越高
+        // for (int i = 0; i < V; i ++){
+        //     printf("degree %d, %d\n", i, out_pointer[i + 1] - out_pointer[i]);
+        // }
+        
+        // 测试 cuda_vector 和 cuda_hash 的部分
+        // test_mmpool(V, thread_num, 2, info, L_hash);
+        int *nid = info->nid[nid_vec_id];
 
-        start_id = vertex_num;
-        // end_id = -1;
-        // start_id = -1;
-        while (start_id > 0) {
-            // start_id = end_id + 1;
-            // end_id = min(V - 1, start_id + thread_num - 1);
-            end_id = start_id - 1;
-            start_id = max(0, start_id - thread_num);
-            // printf("start, end: %d %d !\n", start_id, end_id);
+        clear_L <<< dimGrid_V, dimBlock >>> (V, info->L_cuda);
+        clear_T <<< dimGrid_G_max, dimBlock >>> (vertex_num, info->T0);
+        clear_T <<< dimGrid_G_max, dimBlock >>> (vertex_num, info->T1);
+        init_T <<< dimGrid_G_max, dimBlock >>> (vertex_num, info->T0, info->L_cuda, nid);
 
-            // 根据奇偶性，轮流使用 T0、T1，不需要交换指针
-            if (iter % 2 == 1) {
+        // Auxiliary variable, it is not convenient to directly detect whether T is empty
+        int iter = 0;
+        int start_id, end_id;
 
-                start_time = clock();
-                gen_label_hsdl_v3 <<< dimGrid_thread, dimBlock >>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
-                info->L_cuda, L_hash, D_hash, info->T0, start_id, end_id, D_vector, D_par, nid, Num_L, L_push_back);
-                cudaDeviceSynchronize();
-                end_time = clock();
-                time1 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
-                
-                // push_back L
-                start_time = clock();
-                Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, info->L_cuda, D_par, nid, Num_L, L_push_back, Num_T, T_push_back);
-                cudaDeviceSynchronize();
-                end_time = clock();
-                time2 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
-                // clear_T <<< dimGrid_V, dimBlock >>> (V, info->T0, info->L_cuda);
-                // cudaDeviceSynchronize();
+        // 计时
+        cudaEvent_t start, stop;
+        clock_t start_time, end_time;
+        double time1 = 0.0, time2 = 0.0, time3 = 0.0, time4 = 0.0;
+        float elapsedTime = 0.0;
+        cudaEventCreate(&start);
+        cudaEventCreate(&stop);
+        cudaEventRecord(start, 0);
+        while (1) {
+            if (iter ++ >= hop_cst) break;
+            // iter = 1 -> 生成 跳数 1
+            // iter = 2 -> 生成 跳数 2
+            // iter = 3 -> 生成 跳数 3
+            // iter = 4 -> 生成 跳数 4
+            // iter = 5 -> 生成 跳数 5
+            
+            // printf("iteration_hop: %d\n", iter);
 
-                // push_back T
-                start_time = clock();
-                Push_Back_T <<< dimGrid_thread, dimBlock >>> (V, thread_num, start_id, end_id, info->T1, nid, Num_T, T_push_back);
-                cudaDeviceSynchronize();
-                end_time = clock();
-                time3 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+            start_id = vertex_num;
+            // end_id = -1;
+            // start_id = -1;
+            while (start_id > 0) {
+                // start_id = end_id + 1;
+                // end_id = min(V - 1, start_id + thread_num - 1);
+                end_id = start_id - 1;
+                start_id = max(0, start_id - thread_num);
+                // printf("start, end: %d %d !\n", start_id, end_id);
 
-            }else{
-                start_time = clock();
-                gen_label_hsdl_v3 <<< dimGrid_thread, dimBlock >>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
-                info->L_cuda, L_hash, D_hash, info->T1, start_id, end_id, D_vector, D_par, nid, Num_L, L_push_back);
-                cudaDeviceSynchronize();
-                end_time = clock();
-                time1 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+                // 根据奇偶性，轮流使用 T0、T1，不需要交换指针
+                if (iter % 2 == 1) {
 
-                // push_back L
-                start_time = clock();
-                Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, info->L_cuda, D_par, nid, Num_L, L_push_back, Num_T, T_push_back);
-                cudaDeviceSynchronize();
-                end_time = clock();
-                time2 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
-                // clear_T <<< dimGrid_V, dimBlock >>> (V, info->T0, info->L_cuda);
-                // cudaDeviceSynchronize();
+                    start_time = clock();
+                    gen_label_hsdl_v3 <<< dimGrid_thread, dimBlock >>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
+                    info->L_cuda, L_hash, D_hash, info->T0, start_id, end_id, D_vector, D_par, nid, Num_L, L_push_back);
+                    cudaDeviceSynchronize();
+                    end_time = clock();
+                    time1 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+                    
+                    // push_back L
+                    start_time = clock();
+                    Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, info->L_cuda, D_par, nid, Num_L, L_push_back, Num_T, T_push_back);
+                    cudaDeviceSynchronize();
+                    end_time = clock();
+                    time2 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+                    // clear_T <<< dimGrid_V, dimBlock >>> (V, info->T0, info->L_cuda);
+                    // cudaDeviceSynchronize();
 
-                // push_back T
-                start_time = clock();
-                Push_Back_T <<< dimGrid_thread, dimBlock >>> (V, thread_num, start_id, end_id, info->T0, nid, Num_T, T_push_back);
-                cudaDeviceSynchronize();
-                end_time = clock();
-                time3 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+                    // push_back T
+                    start_time = clock();
+                    Push_Back_T <<< dimGrid_thread, dimBlock >>> (V, thread_num, start_id, end_id, info->T1, nid, Num_T, T_push_back);
+                    cudaDeviceSynchronize();
+                    end_time = clock();
+                    time3 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+
+                }else{
+                    start_time = clock();
+                    gen_label_hsdl_v3 <<< dimGrid_thread, dimBlock >>> (V, thread_num, hop_cst, iter - 1, out_pointer, out_edge, out_edge_weight,
+                    info->L_cuda, L_hash, D_hash, info->T1, start_id, end_id, D_vector, D_par, nid, Num_L, L_push_back);
+                    cudaDeviceSynchronize();
+                    end_time = clock();
+                    time1 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+
+                    // push_back L
+                    start_time = clock();
+                    Push_Back_L <<< dimGrid_V, dimBlock >>> (V, thread_num, start_id, end_id, iter, info->L_cuda, D_par, nid, Num_L, L_push_back, Num_T, T_push_back);
+                    cudaDeviceSynchronize();
+                    end_time = clock();
+                    time2 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+                    // clear_T <<< dimGrid_V, dimBlock >>> (V, info->T0, info->L_cuda);
+                    // cudaDeviceSynchronize();
+
+                    // push_back T
+                    start_time = clock();
+                    Push_Back_T <<< dimGrid_thread, dimBlock >>> (V, thread_num, start_id, end_id, info->T0, nid, Num_T, T_push_back);
+                    cudaDeviceSynchronize();
+                    end_time = clock();
+                    time3 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+                }
             }
-        }
 
-        start_time = clock();
-        if (iter % 2 == 1) {
-            // 清洗 T 数组
-            clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T0);
-        }else{
-            // 清洗 T 数组
-            clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T1);
+            start_time = clock();
+            if (iter % 2 == 1) {
+                // 清洗 T 数组
+                clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T0);
+            }else{
+                // 清洗 T 数组
+                clear_T <<< dimGrid_V, dimBlock >>> (vertex_num, info->T1);
+            }
+            cudaDeviceSynchronize();
+            end_time = clock();
+            time4 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+            
+            // cudaEventRecord(stop, 0);
+            // cudaEventSynchronize(stop);
+            // cudaEventElapsedTime(&elapsedTime, start, stop);
+            // printf("Time generation in hop %d : %.8lf s\n", iter, elapsedTime / 1000.0);
         }
-        cudaDeviceSynchronize();
-        end_time = clock();
-        time4 += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+        // printf("time 1, 2, 3, 4: %.5lf, %.5lf, %.5lf, %.5lf \n", time1, time2, time3, time4);
+
+        err = cudaGetLastError(); // 检查内核内存申请错误
+        if (err != cudaSuccess) {
+            printf("!INIT CUDA ERROR3: %s\n", cudaGetErrorString(err));
+        }
         
-        // cudaEventRecord(stop, 0);
-        // cudaEventSynchronize(stop);
-        // cudaEventElapsedTime(&elapsedTime, start, stop);
-        // printf("Time generation in hop %d : %.8lf s\n", iter, elapsedTime / 1000.0);
-    }
-    // printf("time 1, 2, 3, 4: %.5lf, %.5lf, %.5lf, %.5lf \n", time1, time2, time3, time4);
+        // timer record
+        cudaEventRecord(stop, 0);
+        cudaEventSynchronize(stop);
+        cudaEventElapsedTime(&elapsedTime, start, stop);
+        // printf("Time generation: %.6fs\n", elapsedTime / 1000.0);
 
-    err = cudaGetLastError(); // 检查内核内存申请错误
-    if (err != cudaSuccess) {
-        printf("!INIT CUDA ERROR3: %s\n", cudaGetErrorString(err));
+        info->time_generate_labels += elapsedTime / 1000.0;
+        cudaEventDestroy(start);
+        cudaEventDestroy(stop);
+    } else if (info->use_2023WWW_GPU_version) {
+        
     }
-    
-    // timer record
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-    // printf("Time generation: %.6fs\n", elapsedTime / 1000.0);
-
-    info->time_generate_labels += elapsedTime / 1000.0;
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
 
     // printf("hub, parent, hop, dis:\n");
     auto begin = std::chrono::high_resolution_clock::now();
@@ -615,10 +618,10 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     
     // int cpu_thread_num = 100;
     // ThreadPool pool(cpu_thread_num);
-	// std::vector<std::future<int>> results;
+    // std::vector<std::future<int>> results;
     // for (int q = 0; q < cpu_thread_num; ++q) {
     //     results.emplace_back(pool.enqueue(
-	// 		[q, cpu_thread_num, V, &L, &nid_vec, info] {
+    // 		[q, cpu_thread_num, V, &L, &nid_vec, info] {
     //         for (int v = q; v < V; v += cpu_thread_num) {
     //             for (int i = 0; i < info->L_cuda[v].blocks_num; ++i) {
     //                 int block_id = info->L_cuda[v].block_idx_array[i];
@@ -634,7 +637,7 @@ void label_gen (CSR_graph<weight_type>& input_graph, hop_constrained_case_info_v
     //     }));
     // }
     // for (auto &&result : results){
-	// 	result.get();
+    // 	result.get();
     // }
     // results.clear();
 
