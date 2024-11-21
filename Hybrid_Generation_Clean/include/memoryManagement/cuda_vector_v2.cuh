@@ -72,10 +72,12 @@ template <typename T> __device__ void cuda_vector_v2<T>::push_back(const T value
                 this->pool->push_node(this->now_block, value);
                 this->block_idx_array[this->blocks_num] = this->now_block;
                 this->blocks_num ++;
-                ++ this->current_size;
-            }else{
+                atomicAdd(&this->current_size, 1);
+                // ++ this->current_size;
+            } else {
                 this->pool->push_node(this->now_block, value);
-                ++ this->current_size;
+                atomicAdd(&this->current_size, 1);
+                // ++ this->current_size;
             }
             // 释放锁
             atomicExch(&(this->lock), 0);
@@ -85,14 +87,12 @@ template <typename T> __device__ void cuda_vector_v2<T>::push_back(const T value
 };
 
 template <typename T> __device__ T *cuda_vector_v2<T>::get(int index) {
-
     //找到对应的块
     int block_idx = this->block_idx_array[index / pool->get_nodes_per_block()];
     //找到对应的节点
     int node_idx = index % pool->get_nodes_per_block();
     //返回节点
     return pool->get_node(block_idx, node_idx);
-
 };
 
 template <typename T> __device__ void cuda_vector_v2<T>::init(int V, int vid) {

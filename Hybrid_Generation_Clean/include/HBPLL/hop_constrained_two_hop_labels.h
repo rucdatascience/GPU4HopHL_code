@@ -70,7 +70,9 @@ public:
 	int upper_k = 0;
 	bool use_rank_prune = false;
 	bool use_2023WWW_generation = false;
+	bool use_2023WWW_generation_optimized = false;
 	bool use_GPU_version_generation = false;
+	bool use_GPU_version_generation_optimized = false;
 	bool use_canonical_repair = 1;
 
 	/*running time records*/

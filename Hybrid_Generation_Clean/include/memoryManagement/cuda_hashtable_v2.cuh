@@ -36,6 +36,16 @@ public:
         // __threadfence();
     }
 
+    // Modified Min function
+    __device__ void modify_min (const int pos, const int val) {
+        table[pos] = min(table[pos], val);
+        // __threadfence();
+    }
+    __device__ void modify_min (const int vertex, const int hop, const int hop_cst, const int val) {
+        table[vertex * (hop_cst + 1) + hop] = min(table[vertex * (hop_cst + 1) + hop], val);
+        // __threadfence();
+    }
+
     // Query function
     __host__ __device__ ValueType get (const int pos) {
         return table[pos];

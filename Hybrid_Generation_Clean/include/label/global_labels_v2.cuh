@@ -134,15 +134,28 @@ public:
         cudaMallocManaged(&D_vector, (long long) thread_num * V * sizeof(int));
         cudaDeviceSynchronize();
         
-        cudaMallocManaged(&Num_T, (long long) sizeof(int) * V);
-        cudaDeviceSynchronize();
-        cudaMallocManaged(&T_push_back, (long long) thread_num * V * sizeof(std::pair<int, int>));
-        cudaDeviceSynchronize();
+        if (use_2023WWW_GPU_version) {
+            cudaMallocManaged(&Num_T, (long long) sizeof(int) * V);
+            cudaDeviceSynchronize();
+            cudaMallocManaged(&T_push_back, (long long) thread_num * V * 10 * sizeof(std::pair<int, int>));
+            cudaDeviceSynchronize();
 
-        cudaMallocManaged(&Num_L, (long long) sizeof(int) * V);
-        cudaDeviceSynchronize();
-        cudaMallocManaged(&L_push_back, (long long) thread_num * V * sizeof(std::pair<int, int>));
-        cudaDeviceSynchronize();
+            cudaMallocManaged(&Num_L, (long long) sizeof(int) * V);
+            cudaDeviceSynchronize();
+            cudaMallocManaged(&L_push_back, (long long) thread_num * V * 10 * sizeof(std::pair<int, int>));
+            cudaDeviceSynchronize();
+        } else {
+            cudaMallocManaged(&Num_T, (long long) sizeof(int) * V);
+            cudaDeviceSynchronize();
+            cudaMallocManaged(&T_push_back, (long long) thread_num * V * sizeof(std::pair<int, int>));
+            cudaDeviceSynchronize();
+
+            cudaMallocManaged(&Num_L, (long long) sizeof(int) * V);
+            cudaDeviceSynchronize();
+            cudaMallocManaged(&L_push_back, (long long) thread_num * V * sizeof(std::pair<int, int>));
+            cudaDeviceSynchronize();
+        }
+        
 
 	    // cudaMemGetInfo(&free_byte, &total_byte);
         // printf("Device memory: total %ld, free %ld\n", total_byte, free_byte);

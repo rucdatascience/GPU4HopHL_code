@@ -228,7 +228,8 @@ int main () {
     // Sample diagram parameters
     // int V = 1033691, E = 6911318;
     // int V = 200000, E = 1000000;
-    int V = 10000, E = 50000;
+    int V = 50000, E = 500000;
+    // int V = 10000, E = 50000;
     // int V = 5, E = 8;
     int Distributed_Graph_Num = 1;
     int G_max = (V + Distributed_Graph_Num - 1) / Distributed_Graph_Num;
@@ -236,7 +237,7 @@ int main () {
     // int Distributed_Graph_Num = (V + G_max - 1) / G_max;
 
     // G_max = 1;
-    int CPU_Gen_Num = 1, GPU_Gen_Num = 4;
+    int CPU_Gen_Num = 0, GPU_Gen_Num = 4;
     int CPU_Clean_Num = 1, GPU_Clean_Num = 4;
     
     int hop_cst = 4, thread_num = 1000, thread_num_clean = 5000;
@@ -258,7 +259,9 @@ int main () {
     info_cpu.upper_k = hop_cst;
 	info_cpu.use_rank_prune = 1;
 	info_cpu.use_2023WWW_generation = 0;
+    info_cpu.use_2023WWW_generation_optimized = 0;
     info_cpu.use_GPU_version_generation = 1;
+    info_cpu.use_GPU_version_generation_optimized = 0;
 	info_cpu.use_canonical_repair = 1;
 	info_cpu.max_run_time_seconds = 100;
     info_cpu.thread_num = num_of_threads_cpu;
@@ -272,7 +275,7 @@ int main () {
     info_gpu->hop_cst = hop_cst;
     info_gpu->thread_num = thread_num;
     info_gpu->use_2023WWW_GPU_version = 0;
-    info_gpu->use_new_algo = 0;
+    info_gpu->use_new_algo = 1;
     printf("Init GPU_Info Successful!\n");
     
     // init label
