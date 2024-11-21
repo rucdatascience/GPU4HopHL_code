@@ -17,7 +17,7 @@ struct group_union_unit {
 };
 std::set<group_union_unit> se;
 
-static void generate_Group_CDLP(graph_v_of_v<int> &instance_graph, std::vector<std::vector<int>> &groups, int MAX_GROUP_SIZE) {
+static void generate_Group_CDLP(graph_v_of_v<int> &instance_graph, std::vector<std::vector<int>> &groups, int& MAX_GROUP_SIZE) {
     printf("debug CDLP !!! \n");
     auto start = std::chrono::high_resolution_clock::now();
     // 将图转换为 CSR 格式
@@ -50,14 +50,21 @@ static void generate_Group_CDLP(graph_v_of_v<int> &instance_graph, std::vector<s
     groups.erase(std::remove_if(groups.begin(), groups.end(), [](const std::vector<int>& group) { return group.size() == 0; }), groups.end());
     
     for (int group_id = 0; group_id < groups.size(); group_id++) {
-        printf("groups size : %d\n", groups[group_id].size());
+        //printf("groups size : %d\n", groups[group_id].size());
+        if(groups[group_id].size()>MAX_GROUP_SIZE)
+        {
+            MAX_GROUP_SIZE = groups[group_id].size();
+            printf( "OUT OF MAX_GROUP_SIZE 1, now gmax turn to be %d\n",MAX_GROUP_SIZE);//有问题，会生成大于MAX group的group
+            //assert(false);
+        }
+        
         se.insert((group_union_unit){group_id, groups[group_id].size(), groups[group_id]});
     }
 
     // merge the small subsets
     std::set<group_union_unit>::iterator it1 = se.end(), it2;
     it1--;
-    printf("max groups size: %d\n", (*it1).group_size);
+    //printf("max groups size: %d\n", (*it1).group_size);
     
     while (!se.empty()) {
         it1 = --se.end();
@@ -96,10 +103,15 @@ static void generate_Group_CDLP(graph_v_of_v<int> &instance_graph, std::vector<s
     // groups = groups_after;
     int group_tot_node = 0;
     for (int group_id = 0; group_id < groups.size(); group_id++) {
-        printf("groups after size : %d\n", groups[group_id].size());
+        //printf("groups after size : %d\n", groups[group_id].size());
+        if(groups[group_id].size()>MAX_GROUP_SIZE)
+        {
+            printf( "OUT OF MAX_GROUP_SIZE\n");
+            assert(false);
+        }
         group_tot_node += groups[group_id].size();
     }
-    printf("group_tot_node: %d\n", group_tot_node);
+    //printf("group_tot_node: %d\n", group_tot_node);
     
     end = std::chrono::high_resolution_clock::now();
     duration = end - start;

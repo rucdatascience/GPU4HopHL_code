@@ -101,6 +101,10 @@ template <typename T> __device__ void cuda_vector_v2<T>::init(int V, int vid) {
     this->blocks_num = 1;
     this->now_block = vid;
     // if (V < 1000) printf("vid: %d\n", vid);
+    if(vid > this->pool->num_blocks)
+    {
+        printf("error vid > pool size: %d\n\n",this->pool->num_blocks);
+    }
     this->pool->blocks_state[vid] = 0;
     // this->pool->set_blocks_state(vid, 0);
     // __threadfence();

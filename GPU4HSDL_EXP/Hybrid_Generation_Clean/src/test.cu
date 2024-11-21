@@ -37,6 +37,8 @@ struct Res {
   double query_time=0; // average query time
   double before_clean_query_time = 0;
   double clean_time=0;
+  double query_path_time = 0;
+  double before_clean_query_path_time = 0;
 };
 struct Executive_Core {
     int id;
@@ -155,10 +157,10 @@ void GPU_HSDL_checker (vector<vector<hub_type_v2> >&LL, graph_v_of_v<int> &insta
 
 void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two_hop_label> >&LL, graph_v_of_v<int> &instance_graph, int upper_k, Res& result, int before_clean) {
     
-    const int ITERATIONS = 10;  // 进行100次完整的查询操作
+    const int ITERATIONS = 20;  // 进行100次完整的查询操作
 
     long long total_time = 0;  // 累计所有查询的时间
-
+    long long total_time_path = 0;
     for (int iter = 0; iter < ITERATIONS; ++iter) {
         std::ifstream in(query_path);  // 每次循环重新打开文件
         if (!in) {
@@ -184,11 +186,12 @@ void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two
             dis+= hop_constrained_extract_distance(LL, source, terminal, upper_k);
             auto end = std::chrono::steady_clock::now();
             time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
+
+            begin = std::chrono::steady_clock::now();
+            volatile auto dummy = hop_constrained_extract_shortest_path(LL, source, terminal, upper_k);
+            end = std::chrono::steady_clock::now();
+            total_time_path+=std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
             
-            if(lines%10000==0)
-            {
-                //printf("size1: %d,size2: %d, total time now: %lld,match count: %lld\n\n",LL[source].size(),LL[terminal].size(),time,match_count);
-            }
         }
         // auto end = std::chrono::steady_clock::now();
         // time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
@@ -206,11 +209,15 @@ void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two
     if (before_clean == 1) {
        
         result.before_clean_query_time = total_time / ITERATIONS / 1e6;  // 总时间除以ITERATIONS，转换为ms
+        result.before_clean_query_path_time = total_time_path/ ITERATIONS / 1e6;
     } else {
-        printf("total time %ld\n",total_time);
+        //printf("total time %ld\n",total_time);
         result.query_time = total_time / ITERATIONS / 1e6;  // 总时间除以ITERATIONS，转换为ms
+        result.query_path_time = total_time_path/ ITERATIONS / 1e6;
     }
+    printf("call query\n\n");
 }
+
 
 
 int main (int argc,char** argv) {
@@ -241,6 +248,8 @@ int main (int argc,char** argv) {
     std::string query_path = argv[4];
     std::string output = argv[5];
     int is_clean = std::stoi(argv[6]);
+    G_max = std::stoi(argv[7]);
+    thread_num = thread_num_clean= std::stoi(argv[8]);
     std::string dataset_name = std::filesystem::path(dataset).stem().string();
 
     // Remove trailing ".e" if present
@@ -265,7 +274,7 @@ int main (int argc,char** argv) {
     int print_details = 1;
     int check_correctness = 0;
     int use_cd = 1;
-    int use_clean = 1;
+    int use_clean = 0;
     //string data_path = "../data/simple_iterative_tests_100w.txt";
 
      if (generate_new_graph) {
@@ -279,6 +288,22 @@ int main (int argc,char** argv) {
         for (int i = 0; i < V; ++i) {E += instance_graph[i].size();}
         Distributed_Graph_Num = (V + G_max - 1) / G_max;
     }
+
+    if (use_cd == 0) {
+        graph_pool.graph_group.resize(Distributed_Graph_Num);
+        int Nodes_Per_Graph = (V - 1) / Distributed_Graph_Num + 1;
+        for (int i = 0; i < Distributed_Graph_Num; ++ i) {
+            for (int j = Nodes_Per_Graph * i; j < Nodes_Per_Graph * (i + 1); ++j) {
+                if (j >= V) break;
+                graph_pool.graph_group[i].push_back(j);
+            }
+        }
+        G_max = V / Distributed_Graph_Num + 1;
+    } else {
+        generate_Group_CDLP(instance_graph, graph_pool.graph_group, G_max);
+        Distributed_Graph_Num = graph_pool.graph_group.size();
+        //G_max = V / Distributed_Graph_Num + 1;
+    }
     
     // cpu info
     info_cpu.upper_k = hop_cst;
@@ -286,14 +311,16 @@ int main (int argc,char** argv) {
 	info_cpu.use_2023WWW_generation = 0;
 	info_cpu.use_canonical_repair = 1;
 	info_cpu.max_run_time_seconds = 100;
-    info_cpu.thread_num = 145; //要和hop_constrained_two_hop_labels_generation.h里面的 #define num_of_threads_cpu 100 保持一致
+    info_cpu.thread_num = 144; //要和hop_constrained_two_hop_labels_generation.h里面的 #define num_of_threads_cpu 100 保持一致
     printf("Init CPU_Info Successful!\n");
+    printf("G_max: %d\n",G_max);
+    std::cout<<std::endl;
 
     // gpu info
     info_gpu = new hop_constrained_case_info_v2();
     info_gpu->init(V, hop_cst, G_max, thread_num, graph_pool.graph_group);
-    cudaMemGetInfo(&free_byte, &total_byte);
-    printf("Device memory after init: total %ld, free %ld\n", total_byte, free_byte);
+    // cudaMemGetInfo(&free_byte, &total_byte);
+    // printf("Device memory after init: total %ld, free %ld\n", total_byte, free_byte);
     info_gpu->hop_cst = hop_cst;
     info_gpu->thread_num = thread_num;
     printf("Init GPU_Info Successful!\n");
@@ -314,24 +341,14 @@ int main (int argc,char** argv) {
     hop_constrained_two_hop_labels_generation_init(instance_graph, info_cpu);
 
     // get graph_pool, use_cd 0/1
-    if (use_cd == 0) {
-        graph_pool.graph_group.resize(Distributed_Graph_Num);
-        int Nodes_Per_Graph = (V - 1) / Distributed_Graph_Num + 1;
-        for (int i = 0; i < Distributed_Graph_Num; ++ i) {
-            for (int j = Nodes_Per_Graph * i; j < Nodes_Per_Graph * (i + 1); ++j) {
-                if (j >= V) break;
-                graph_pool.graph_group[i].push_back(j);
-            }
-        }
-        G_max = V / Distributed_Graph_Num + 1;
-    } else {
-        generate_Group_CDLP(instance_graph, graph_pool.graph_group, G_max);
-        Distributed_Graph_Num = graph_pool.graph_group.size();
-    }
+
     info_gpu->set_nid(Distributed_Graph_Num, graph_pool.graph_group);
     
     printf("G_max: %d\n",G_max);
 
+    cudaMemGetInfo(&free_byte, &total_byte);
+    printf("Device memory initial success!: total %ld, free %ld\n", total_byte, free_byte);
+    std::cout<<std::endl;
 
     priority_queue<Executive_Core> pq_gen;
     for (int i = 0; i < CPU_Gen_Num; ++i) pq_gen.push(Executive_Core(i, 0, 0)); // id, time, cpu/gpu
@@ -340,7 +357,7 @@ int main (int argc,char** argv) {
         Executive_Core x = pq_gen.top();
         pq_gen.pop();
         auto begin = std::chrono::high_resolution_clock::now();
-        printf("Gen Core Information: %lf, %d, %d\n", x.time_use, x.id, x.core_type);
+        //printf("Gen Core Information: %lf, %d, %d\n", x.time_use, x.id, x.core_type);
         if (x.core_type == 0) { // core type is cpu
             hop_constrained_two_hop_labels_generation(instance_graph, info_cpu, L_hybrid, graph_pool.graph_group[i]);
         } else {
@@ -375,6 +392,7 @@ int main (int argc,char** argv) {
 
     if (use_clean) {
         query_vertex_pair(query_path, L_hybrid, instance_graph, upper_k,result,1);
+        query_vertex_pair(query_path, L_hybrid, instance_graph, upper_k,result,1);
         long long label_size_total = 0;
         for (int i = 0; i < V; ++i) {
             label_size_total += L_hybrid[i].size();
@@ -394,7 +412,7 @@ int main (int argc,char** argv) {
             Executive_Core x = pq_clean.top();
             pq_clean.pop();
             auto begin = std::chrono::high_resolution_clock::now();
-            printf("Clean Core Information: %lf, %d, %d\n", x.time_use, x.id, x.core_type);
+            //printf("Clean Core Information: %lf, %d, %d\n", x.time_use, x.id, x.core_type);
             if (x.core_type == 0) { // core type is cpu
                 hop_constrained_clean_L_distributed(info_cpu, L_hybrid, graph_pool.graph_group[i], info_cpu.thread_num);
                 // hop_constrained_clean_L (info_cpu, L_hybrid, info_cpu.thread_num, V);
@@ -418,11 +436,13 @@ int main (int argc,char** argv) {
         printf("Check Union !\n");
         GPU_HSDL_checker(L_hybrid, instance_graph, iteration_source_times, iteration_terminal_times, hop_cst);
     }
+    
 
     long long label_size_total = 0;
     for (int i = 0; i < V; ++i) {
         label_size_total += L_hybrid[i].size();
     }
+    query_vertex_pair(query_path, L_hybrid, instance_graph, upper_k,result,0);
     query_vertex_pair(query_path, L_hybrid, instance_graph, upper_k,result,0);
     // 输出详细记录
     if (print_details) {
@@ -446,9 +466,10 @@ int main (int argc,char** argv) {
     // 追加写入结果到文件
     std::string algoname;
     algoname = (algo==0)?"Hybrid":"GPU";
+    algoname = algoname+"_"+"Gmax="+std::to_string(G_max);
     out << algoname<< "," << "GPU,"<<dataset_name<<","<<upper_k<<","<<result.index_time << "," 
         << result.size << "," << result.before_clean_size<<","<<result.query_time << "," <<result.before_clean_query_time<<","
-        << result.clean_time << std::endl;
+        << result.clean_time <<"," <<result.before_clean_query_path_time<<","<<result.query_path_time<<std::endl;
 
     out.close();
 

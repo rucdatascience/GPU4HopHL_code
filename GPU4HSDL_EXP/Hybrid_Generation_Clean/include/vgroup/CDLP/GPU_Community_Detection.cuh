@@ -56,37 +56,107 @@ __global__ void Label_init(int *labels, int *all_pointer, int N)
 // every segmentation are sorted
 // count Frequency from the start in the global_space_for_label to the end in the global_space_for_label
 // the new labels are stroed in the new_labels
+// __global__ void Get_New_Label(int *all_pointer, int *prop_labels, int *new_labels, int* community_size, int N, int MAX_GROUP_SIZE)
+// {
+//     // Use GPU to propagate all labels at the same time.
+//     int tid = blockDim.x * blockIdx.x + threadIdx.x; // tid decides process which vertex
+//     if (tid >= 0 && tid < N) {
+//         int maxlabel = prop_labels[all_pointer[tid]], maxcount = 0; // the label that appears the most times and its number of occurrences
+//         atomicAdd(&community_size[maxlabel], 1);
+//         for (int c = all_pointer[tid], last_label = prop_labels[all_pointer[tid]], last_count = 0; c < all_pointer[tid + 1]; c++) // traverse the neighbor vertex label data in order
+//         {
+//             if (prop_labels[c] == last_label)
+//             {
+//                 last_count ++; // add up the number of label occurrences
+//                 int current_size = atomicAdd(&community_size[last_label], 0);
+//                 if (last_count > maxcount && current_size <= MAX_GROUP_SIZE) // the number of label occurrences currently traversed is greater than the recorded value
+//                 {
+//                     atomicSub(&community_size[maxlabel], 1);
+//                     maxcount = last_count; // update maxcount and maxlabel
+//                     maxlabel = last_label;
+//                     atomicAdd(&community_size[maxlabel], 1);
+//                 }
+//             }
+//             else
+//             {
+//                 last_label = prop_labels[c]; // a new label appears, updates the label and number of occurrences
+//                 last_count = 1;
+//             }
+//         }
+//         // 检查选择的标签对应的社区大小是否已达最大值
+//         //atomicAdd(&community_size[maxlabel], 1); // 如果没有超过限制，则增加该标签对应社区的大小
+//         new_labels[tid] = maxlabel; // 记录maxlabel
+        
+//     }
+// }
+
 __global__ void Get_New_Label(int *all_pointer, int *prop_labels, int *new_labels, int* community_size, int N, int MAX_GROUP_SIZE)
 {
-    // Use GPU to propagate all labels at the same time.
-    int tid = blockDim.x * blockIdx.x + threadIdx.x; // tid decides process which vertex
-    if (tid >= 0 && tid < N) {
-        int maxlabel = prop_labels[all_pointer[tid]], maxcount = 0; // the label that appears the most times and its number of occurrences
-        atomicAdd(&community_size[maxlabel], 1);
-        for (int c = all_pointer[tid], last_label = prop_labels[all_pointer[tid]], last_count = 0; c < all_pointer[tid + 1]; c++) // traverse the neighbor vertex label data in order
-        {
-            if (prop_labels[c] == last_label)
-            {
-                last_count ++; // add up the number of label occurrences
-                if (last_count > maxcount && atomicAdd(&community_size[last_label], 1) < MAX_GROUP_SIZE) // the number of label occurrences currently traversed is greater than the recorded value
-                {
-                    atomicAdd(&community_size[maxlabel], -1);
-                    maxcount = last_count; // update maxcount and maxlabel
-                    maxlabel = last_label;
+    int tid = blockDim.x * blockIdx.x + threadIdx.x; // 当前线程处理的顶点索引
+    if (tid < N) {
+        int start = all_pointer[tid];
+        int end = all_pointer[tid + 1];
+        int assigned_label = -1;
+
+        for (int c = start; c < end; ) {
+            int label = prop_labels[c];
+            int count = 1;
+            c++;
+            // 统计连续相同的标签出现次数
+            while (c < end && prop_labels[c] == label) {
+                count++;
+                c++;
+            }
+
+            // 尝试原子性地增加社区大小
+            bool assigned = false;
+            while (!assigned) {
+                int current_size = atomicAdd(&community_size[label], 0);
+                if (current_size >= MAX_GROUP_SIZE) {
+                    // 社区已满，无法分配该标签
+                    break;
+                }
+                int result = atomicCAS(&community_size[label], current_size, current_size + 1);
+                if (result == current_size) {
+                    // 成功增加社区大小，分配该标签
+                    assigned_label = label;
+                    assigned = true;
+                    break;
+                } else {
+                    // 其他线程更新了社区大小，重试
                 }
             }
-            else
-            {
-                last_label = prop_labels[c]; // a new label appears, updates the label and number of occurrences
-                last_count = 1;
+            if (assigned) {
+                break; // 已成功分配标签，退出循环
+            }
+            // 否则，继续尝试下一个标签
+        }
+
+        if (assigned_label == -1) {
+            // 无法分配任何邻居标签，尝试分配自己的标签
+            assigned_label = tid;
+            bool assigned = false;
+            while (!assigned) {
+                int current_size = atomicAdd(&community_size[assigned_label], 0);
+                if (current_size >= MAX_GROUP_SIZE) {
+                    // 自己的社区也已满，可以选择特殊处理方式
+                    // 这里选择忽略社区大小限制，或者您可以选择其他策略
+                    assigned = true;
+                } else {
+                    int result = atomicCAS(&community_size[assigned_label], current_size, current_size + 1);
+                    if (result == current_size) {
+                        assigned = true;
+                    } else {
+                        // 其他线程更新了社区大小，重试
+                    }
+                }
             }
         }
-        // 检查选择的标签对应的社区大小是否已达最大值
-        //atomicAdd(&community_size[maxlabel], 1); // 如果没有超过限制，则增加该标签对应社区的大小
-        new_labels[tid] = maxlabel; // 记录maxlabel
-        
+        // 记录最终分配的标签
+        new_labels[tid] = assigned_label;
     }
 }
+
 
 
 // Community Detection Using Label Propagation on GPU

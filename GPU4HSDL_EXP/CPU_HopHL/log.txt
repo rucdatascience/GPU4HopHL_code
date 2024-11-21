@@ -1,37 +1,14 @@
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.e 2 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
+./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test_dblp/DBLP/*.e 3 0 /home/pengchang/GPU4HSDL_EXP/new-data/test_dblp/DBLP/*.query /home/pengchang/GPU4HSDL_EXP/result_HSDL.csv 1
 read start
+E: 13822496
+
 read success
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.e 3 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
-read start
-read success
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.e 4 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/facebook_clean_data/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
-read start
-read success
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.e 2 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
-read start
-read success
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.e 3 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
-read start
-read success
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.e 4 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/git_web_ml/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
-read start
-read success
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.e 2 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
-read start
-read success
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.e 3 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
-read start
-read success
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.e 4 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
-read start
-read success
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.e 2 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
-read start
-read success
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.e 3 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
-read start
-read success
-./build/test /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.e 4 2 /home/pengchang/GPU4HSDL_EXP/new-data/test2/twitch_gamers/*.query /home/pengchang/GPU4HSDL_EXP/results3.csv 1
-read start
-read success
-测试完成，结果已写入 /home/pengchang/GPU4HSDL_EXP/results3.csv 文件。
+total time 11796237633
+avg_canonical_repair_remove_label_ratio: 0.0207734
+avg_index_time: 740.07s
+	 avg_time_initialization: 0.146291
+	 avg_time_generate_labels: 409.728
+	 avg_time_sortL: 114.485
+	 avg_time_canonical_repair: 160.696
+	 avg_index_size_per_v: 0
+测试完成，结果已写入 /home/pengchang/GPU4HSDL_EXP/result_HSDL.csv 文件。

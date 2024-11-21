@@ -8,7 +8,7 @@
 #include <shared_mutex>
 #include <text_mining/ThreadPool.h>
 
-#define num_of_threads_cpu 145
+#define num_of_threads_cpu 144
 
 /*unique code for this file: 599*/
 long long int max_labal_size_599;

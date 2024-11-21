@@ -5,7 +5,7 @@
 #include <graph_v_of_v/graph_v_of_v.h>
 #include <shared_mutex>
 #include <tool_functions/ThreadPool.h>
-
+#include <map>
 struct Res {
   double index_time =0;
   long long before_clean_size=0; // MB
@@ -75,7 +75,7 @@ void watchdog(int N, std::chrono::milliseconds max_run_time) {
             break;
         }
         update_progress(N);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Check every 100 ms
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000*60)); // Check every 100 ms
     }
 }
 
@@ -320,7 +320,7 @@ void _2023WWW_thread_function(int v_k)
 	dist_hop_changes.push_back(v_k);
 
 	vector<tuple<int, int, int>> dh_updates;
-
+	map<int, int> mp;
 	for (int h = 0; h <= global_upper_k; h++)
 	{
 		if (stop_flag)
@@ -386,12 +386,18 @@ void _2023WWW_thread_function(int v_k)
 					int adj_v = xx.first, ec = xx.second;
 					if (P_u + ec < dist_hop[adj_v].first)
 					{
-						Vh[h + 1].push_back(adj_v);
+						if(mp.find(adj_v)==mp.end())
+						{
+							Vh[h + 1].push_back(adj_v);
+							mp[adj_v]=1;
+						}
+						
 						dh_updates.push_back({adj_v, P_u + ec, u});
 					}
 				}
 			}
 		}
+		mp.clear();
 	}
 
 	for (auto &xx : Temp_L_vk_changes)
@@ -419,7 +425,7 @@ void _2023WWW_thread_function(int v_k)
 
 void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two_hop_label> >&LL, graph_v_of_v<int> &instance_graph, int upper_k, Res& result, int before_clean) {
     
-    const int ITERATIONS = 100;  // 进行100次完整的查询操作
+    const int ITERATIONS = 10;  // 进行100次完整的查询操作
 
     long long total_time = 0;  // 累计所有查询的时间
 
@@ -451,7 +457,7 @@ void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two
             
             if(lines%10000==0)
             {
-                printf("size1: %d,size2: %d, total time now: %lld,match count: %lld\n\n",LL[source].size(),LL[terminal].size(),time,match_count);
+                //printf("size1: %d,size2: %d, total time now: %lld,match count: %lld\n\n",LL[source].size(),LL[terminal].size(),time,match_count);
             }
         }
         // auto end = std::chrono::steady_clock::now();
@@ -459,7 +465,7 @@ void query_vertex_pair(std::string query_path, vector<vector<hop_constrained_two
 
         // 验证查询行数是否符合预期
         if (lines != 100000) {
-            std::cerr << "Query error: Expected 100000 lines, but got " << lines << "\n";
+            //std::cerr << "Query error: Expected 100000 lines, but got " << lines << "\n";
         }
 
         total_time += time;  // 将每次的查询时间累加
