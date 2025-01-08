@@ -1,0 +1,9 @@
+use_Hybrid_4GPU,/home/mdnd/data_exp_11/wiki-talk/wiki-talk.e,2,295.006,123003617
+use_Hybrid_4GPU,/home/mdnd/data_exp_11/wiki-talk/wiki-talk.e,3,390.026,2081547216
+use_Hybrid_4GPU,/home/mdnd/data_exp_11/wiki-talk/wiki-talk.e,4,26815.2,4373885844
+use_Hybrid_4GPU,/home/mdnd/data_exp_11/wiki-talk/wiki-talk.e,4,589.001,4465909501
+use_Hybrid_4GPU,/home/mdnd/data_exp_11/wiki-talk/wiki-talk.e,5,712.042,6664918449
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_11/wiki-talk/wiki-talk.e,2,95.6995,122835324
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_11/wiki-talk/wiki-talk.e,3,185.352,2190304980
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_11/wiki-talk/wiki-talk.e,4,291.106,4669068394
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_11/wiki-talk/wiki-talk.e,5,383.832,7176159756

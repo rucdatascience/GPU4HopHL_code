@@ -1,0 +1,8 @@
+use_Hybrid_4GPU,/home/mdnd/data_exp_9/com-youtube/com-youtube.e,2,118.824,38915614
+use_Hybrid_4GPU,/home/mdnd/data_exp_9/com-youtube/com-youtube.e,3,233.544,425539712
+use_Hybrid_4GPU,/home/mdnd/data_exp_9/com-youtube/com-youtube.e,4,544.891,1803065137
+use_Hybrid_4GPU,/home/mdnd/data_exp_9/com-youtube/com-youtube.e,5,901.115,4731563288
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_9/com-youtube/com-youtube.e,2,34.4149,39534848
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_9/com-youtube/com-youtube.e,3,74.8041,431273229
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_9/com-youtube/com-youtube.e,4,177.634,1885009258
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_9/com-youtube/com-youtube.e,5,328.52,4837046357

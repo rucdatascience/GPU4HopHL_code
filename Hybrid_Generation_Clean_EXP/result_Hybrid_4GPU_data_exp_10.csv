@@ -1,0 +1,9 @@
+use_Hybrid_4GPU,/home/mdnd/data_exp_10/DBLP/DBLP.e,2,239.622,105913225
+use_Hybrid_4GPU,/home/mdnd/data_exp_10/DBLP/DBLP.e,3,391.47,1438567364
+use_Hybrid_4GPU,/home/mdnd/data_exp_10/DBLP/DBLP.e,4,1133.32,9414579372
+use_Hybrid_4GPU,/home/mdnd/data_exp_10/DBLP/DBLP.e,5,8048.43,29471765788
+use_Hybrid_4GPU,/home/mdnd/data_exp_10/DBLP/DBLP.e,5,4056.03,29720481254
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_10/DBLP/DBLP.e,2,102.012,106013090
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_10/DBLP/DBLP.e,3,291.024,1439888187
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_10/DBLP/DBLP.e,4,874.19,9479120543
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_10/DBLP/DBLP.e,5,2069.33,30487768982

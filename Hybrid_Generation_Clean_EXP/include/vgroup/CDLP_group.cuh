@@ -31,7 +31,7 @@ static void generate_Group_CDLP(graph_v_of_v<int> &instance_graph, std::vector<s
 
     // 执行 CDLP 算法
     start = std::chrono::high_resolution_clock::now();
-    CDLP_GPU(instance_graph.size(), csr, labels, MAX_GROUP_SIZE, 10000);
+    CDLP_GPU(instance_graph.size(), csr, labels, MAX_GROUP_SIZE, 1000);
     end = std::chrono::high_resolution_clock::now();
     duration = end - start;
     std::cout << "CDLP took " << duration.count() << " seconds." << std::endl;
@@ -49,8 +49,15 @@ static void generate_Group_CDLP(graph_v_of_v<int> &instance_graph, std::vector<s
     //去除大小为 0 的 group
     groups.erase(std::remove_if(groups.begin(), groups.end(), [](const std::vector<int>& group) { return group.size() == 0; }), groups.end());
     
+    // for (int group_id = 0; group_id < groups.size(); group_id++) {
+    //     printf("groups size : %d\n", groups[group_id].size());
+    //     se.insert((group_union_unit){group_id, groups[group_id].size(), groups[group_id]});
+    // }
+
     for (int group_id = 0; group_id < groups.size(); group_id++) {
-        printf("groups size : %d\n", groups[group_id].size());
+        if (groups[group_id].size() > MAX_GROUP_SIZE / 2) {
+            printf("groups size : %d\n", groups[group_id].size());
+        }
         se.insert((group_union_unit){group_id, groups[group_id].size(), groups[group_id]});
     }
 
@@ -66,7 +73,7 @@ static void generate_Group_CDLP(graph_v_of_v<int> &instance_graph, std::vector<s
         if ((*it1).id == (*it2).id) {
             -- it2;
         }
-        if (it2 != se.end() && (*it1).id != (*it2).id && (*it1).group_size + (*it2).group_size <= MAX_GROUP_SIZE) {
+        if (it2 != se.end() && (*it1).id != (*it2).id) {
             group_union_unit a = (*it1), b = (*it2);
             a.group_size += b.group_size;
             a.group_node.insert(a.group_node.end(), b.group_node.begin(), b.group_node.end());
@@ -96,7 +103,10 @@ static void generate_Group_CDLP(graph_v_of_v<int> &instance_graph, std::vector<s
     // groups = groups_after;
     int group_tot_node = 0;
     for (int group_id = 0; group_id < groups.size(); group_id++) {
-        printf("groups after size : %d\n", groups[group_id].size());
+        // printf("groups after size : %d\n", groups[group_id].size());
+        if (groups[group_id].size() > MAX_GROUP_SIZE) {
+            printf("> MAX_GROUP_SIZE !!!!\n");
+        }
         group_tot_node += groups[group_id].size();
     }
     printf("group_tot_node: %d\n", group_tot_node);

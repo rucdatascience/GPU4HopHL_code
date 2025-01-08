@@ -52,7 +52,7 @@ public:
     double label_size = 0;
 
     int L_size;
-    int G_max;
+    int _G_max;
 
     hop_constrained_case_info_v2() {}
 
@@ -65,7 +65,7 @@ public:
         size_t free_byte, total_byte;
 
         L_size = V;
-        G_max = G_max;
+        _G_max = G_max;
 
         // Create three memory pools
         // The first memory pool is used to store labels
@@ -90,7 +90,7 @@ public:
         cudaMallocManaged(&L_cuda, (long long) V * sizeof(cuda_vector_v2<hub_type>)); // Allocate n cuda_vector Pointers
         cudaDeviceSynchronize();
         for (int i = 0; i < V; i++) {
-            new (L_cuda + i) cuda_vector_v2<hub_type> (mmpool_labels, i, G_max * hop_cst / nodes_per_block + 1);
+            new (L_cuda + i) cuda_vector_v2<hub_type> (mmpool_labels, i, (long long) G_max * hop_cst / nodes_per_block + 1);
         }
         cudaDeviceSynchronize();
 
@@ -114,7 +114,7 @@ public:
         cudaMallocManaged(&L_hash, (long long) thread_num * sizeof(cuda_hashTable_v2<weight_type>));
         cudaDeviceSynchronize();
         for (int i = 0; i < thread_num; i++) {
-            new (L_hash + i) cuda_hashTable_v2 <weight_type> (G_max * (hop_cst + 1));
+            new (L_hash + i) cuda_hashTable_v2 <weight_type> ((long long) G_max * (hop_cst + 1));
         }
         cudaDeviceSynchronize();
 
@@ -145,12 +145,12 @@ public:
         //     cudaMallocManaged(&L_push_back, (long long) thread_num * V * 10 * sizeof(std::pair<int, int>));
         //     cudaDeviceSynchronize();
         // } else {
-        cudaMallocManaged(&Num_T, (long long) sizeof(int) * V);
+        cudaMallocManaged(&Num_T, (long long) V * sizeof(int));
         cudaDeviceSynchronize();
         cudaMallocManaged(&T_push_back, (long long) thread_num * V * sizeof(std::pair<int, int>));
         cudaDeviceSynchronize();
 
-        cudaMallocManaged(&Num_L, (long long) sizeof(int) * V);
+        cudaMallocManaged(&Num_L, (long long) V * sizeof(int));
         cudaDeviceSynchronize();
         cudaMallocManaged(&L_push_back, (long long) thread_num * V * sizeof(std::pair<int, int>));
         cudaDeviceSynchronize();
@@ -185,19 +185,21 @@ public:
     }
 
     // destructor
-    __host__ void destroy_L_cuda() {
+    __host__ void destroy_L_cuda(int G_max) {
         for (int i = 0; i < L_size; ++i) {
             L_cuda[i].~cuda_vector_v2 <hub_type> ();
         }
         cudaFree(L_cuda);
-
+        
         for (int i = 0; i < G_max; ++i) {
             T0[i].~cuda_vector_v2 <T_item> ();
             T1[i].~cuda_vector_v2 <T_item> ();
+            // printf("gmax_destory: %d\n", i);
         }
+        
         cudaFree(T0);
         cudaFree(T1);
-
+        
         for (int i = 0; i < thread_num; ++i) {
             L_hash[i].~cuda_hashTable_v2 <weight_type> ();
             D_hash[i].~cuda_hashTable_v2 <weight_type> ();
@@ -208,25 +210,24 @@ public:
         }
         cudaFree(nid);
         cudaFree(nid_size);
-
+        
         cudaFree(L_hash);
         cudaFree(D_hash);
-
+        
         cudaFree(D_vector);
         cudaFree(D_pare);
-
+        
         cudaFree(Num_T);
         cudaFree(T_push_back);
         cudaFree(Num_L);
         cudaFree(L_push_back);
-
+        
         mmpool_labels->~mmpool_v2();
         mmpool_T0->~mmpool_v2();
         mmpool_T1->~mmpool_v2();
         cudaFree(mmpool_labels);
         cudaFree(mmpool_T0);
         cudaFree(mmpool_T1);
-
     }
 
 // for clean

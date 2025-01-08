@@ -1,0 +1,9 @@
+use_Hybrid_4GPU,/home/mdnd/data_exp_12/as-skitter/as-skitter.e,2,217.668,103349228
+use_Hybrid_4GPU,/home/mdnd/data_exp_12/as-skitter/as-skitter.e,3,401.155,1280468655
+use_Hybrid_4GPU,/home/mdnd/data_exp_12/as-skitter/as-skitter.e,4,1432.9,7581914807
+use_Hybrid_4GPU,/home/mdnd/data_exp_12/as-skitter/as-skitter.e,5,1908.28,22694478932
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_12/as-skitter/as-skitter.e,2,68.4021,103462837
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_12/as-skitter/as-skitter.e,3,209.075,1282519720
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_12/as-skitter/as-skitter.e,4,713.116,7585333953
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_12/as-skitter/as-skitter.e,5,1536.19,23814361320
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_12/as-skitter/as-skitter.e,5,1621.71,23875030921

@@ -89,7 +89,6 @@ public:
 
 
 /*class member functions*/
-
 template <typename weight_type>
 void graph_v_of_v<weight_type>::add_edge(int e1, int e2, weight_type ec) {
 
@@ -248,8 +247,7 @@ void graph_v_of_v<weight_type>::txt_read(std::string save_name) {
 
 	std::string line_content;
 	std::ifstream myfile(save_name); // open the file
-	if (myfile.is_open())            // if the file is opened successfully
-	{
+	if (myfile.is_open()) {           // if the file is opened successfully
 		getline(myfile, line_content);
 		// 解析表头，获取顶点数，ADJs.resize(n)
 		{
@@ -276,13 +274,13 @@ void graph_v_of_v<weight_type>::txt_read(std::string save_name) {
 		{
 			std::vector<std::string> Parsed_content = parse_string(line_content, " ");
 			//printf("parse string success\n");
-			if (Parsed_content.size() ==
-				3) // Ensure the line has exactly three elements
+			if (Parsed_content.size() == 3) // Ensure the line has exactly three elements
 			{
 				int v1 = std::stoi(Parsed_content[0]);
 				int v2 = std::stoi(Parsed_content[1]);
 				weight_type ec = static_cast<weight_type>(std::stod(Parsed_content[2]));
 				graph_v_of_v<weight_type>::add_edge(v1, v2, ec);
+				// printf("edge: %d %d %d\n", v1, v2, ec);
 			}
 		}
 

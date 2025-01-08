@@ -1,0 +1,8 @@
+use_Hybrid_4GPU,/home/mdnd/data_exp_8/web-Google/web-Google.e,2,77.3988,12806305
+use_Hybrid_4GPU,/home/mdnd/data_exp_8/web-Google/web-Google.e,3,126.793,55046149
+use_Hybrid_4GPU,/home/mdnd/data_exp_8/web-Google/web-Google.e,4,196.871,193255468
+use_Hybrid_4GPU,/home/mdnd/data_exp_8/web-Google/web-Google.e,5,306.534,694788058
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_8/web-Google/web-Google.e,2,14.7657,12869412
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_8/web-Google/web-Google.e,3,28.4532,55526848
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_8/web-Google/web-Google.e,4,50.1168,195077129
+use_Hybrid_1CPU_4GPU,/home/mdnd/data_exp_8/web-Google/web-Google.e,5,95.543,699603501

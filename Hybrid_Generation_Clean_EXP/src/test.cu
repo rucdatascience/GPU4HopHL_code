@@ -54,6 +54,7 @@ bool compare_hop_constrained_two_hop_label_v2 (hub_type &i, hub_type &j) {
 
 void graph_v_of_v_to_LDBC (LDBC<weight_type> &graph, graph_v_of_v<int> &input_graph) {
     int N = input_graph.size();
+    int EE = 0;
     for (int i = 0; i < N; i++) {
         int v_adj_size = input_graph[i].size();
         for (int j = 0; j < v_adj_size; j++) {
@@ -231,26 +232,32 @@ int main (int argc, char** argv) {
     int algo = std::stoi(argv[3]);
     std::string output = argv[4];
 
+    // std::string dataset = "/home/mdnd/data_exp_0/p2p-Gnutella31/p2p-Gnutella31.e";
+    // std::string dataset = "/home/mdnd/data_exp_0/p2p-Gnutella31/p2p-Gnutella31.e";
     // std::string dataset = "/home/mdnd/data_exp_0/CA-CondMat/CA-CondMat.e";
-    // int upper_k = 4;
-    // int algo = 2;
+    // std::string dataset = "/home/mdnd/data_exp_0/Brightkite_edges/Brightkite_edges.e";
+    // std::string dataset = "/home/mdnd/data_exp_0/as-caida20071105/as-caida20071105.e";
+    // int upper_k = 5;
+    // int algo = 4;
     // std::string output = "2";
 
     // Sample diagram parameters
     int V = 10000, E = 50000;
 
-    int Distributed_Graph_Num = 1;
-    int G_max = (V + Distributed_Graph_Num - 1) / Distributed_Graph_Num;
-    // int G_max = 1000;
-    // int Distributed_Graph_Num = (V + G_max - 1) / G_max;
+    // int Distributed_Graph_Num = 1;
+    // int G_max = (V + Distributed_Graph_Num - 1) / Distributed_Graph_Num;
+    int G_max = 500;
+    G_max = std::stoi(argv[5]);
+    int Distributed_Graph_Num = (V + G_max - 1) / G_max;
 
     // G_max = 1;
-    int CPU_Gen_Num = 1, GPU_Gen_Num = 0;
+    int CPU_Gen_Num = 0, GPU_Gen_Num = 0;
     int CPU_Clean_Num = 0, GPU_Clean_Num = 0;
     
     int hop_cst = upper_k, thread_num = 1000, thread_num_clean = 1000;
     double ec_min = 1, ec_max = 100;
     
+    thread_num = std::stoi(argv[6]);
     double time_generate_labels_total = 0.0;
     double time_clean_labels_total = 0.0;
     
@@ -258,23 +265,28 @@ int main (int argc, char** argv) {
     int generate_new_graph = 0;
     int print_details = 1;
     int check_correctness = 0;
-    int use_cd = 0;
+    int use_cd = 1;
     int use_clean = 0;
     string data_path = dataset;
     //string data_path = "../data/simple_iterative_tests_100w.txt";
 
      if (generate_new_graph) {
+        // V = 10000, E = 50000;
         instance_graph = graph_v_of_v_generate_random_graph<int> (V, E, ec_min, ec_max, 1, boost_random_time_seed);
         instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph); // sort vertices
         instance_graph.txt_save("../data/simple_iterative_tests.txt");
     } else {
+        V = 0, E = 0;
         instance_graph.txt_read(data_path);
         instance_graph = graph_v_of_v_update_vertexIDs_by_degrees_large_to_small(instance_graph);
         V = instance_graph.size();
-        for (int i = 0; i < V; ++i) {E += instance_graph[i].size();}
+        for (int i = 0; i < V; ++i) {
+            E += instance_graph[i].size();
+            // printf("Degree: %d %d\n", i, instance_graph[i].size());
+        }
         // Distributed_Graph_Num = (V + G_max - 1) / G_max;
-        Distributed_Graph_Num = 1;
-        G_max = (V + Distributed_Graph_Num - 1) / Distributed_Graph_Num;
+        // Distributed_Graph_Num = 1;
+        // G_max = (V + Distributed_Graph_Num - 1) / Distributed_Graph_Num;
     }
 
     if (use_cd == 0) {
@@ -303,7 +315,11 @@ int main (int argc, char** argv) {
 	info_cpu.max_run_time_seconds = 100;
     info_cpu.thread_num = 100; // 要和hop_constrained_two_hop_labels_generation.h里面的 #define num_of_threads_cpu 100 保持一致
     printf("Init CPU_Info Successful!\n");
-    printf("G_max: %d\n",G_max);
+    printf("G_max: %d\n", G_max);
+
+    // for (int i = 0; i < V; ++i) {
+    //     printf("%d: %d\n", i, instance_graph[i].size());
+    // }
 
     // gpu info
     info_gpu = new hop_constrained_case_info_v2();
@@ -311,9 +327,11 @@ int main (int argc, char** argv) {
     if (algo == 1) {info_cpu.use_2023WWW_generation = 1, CPU_Gen_Num = 1, GPU_Gen_Num = 0;}
     else if (algo == 2) {info_cpu.use_2023WWW_generation_optimized = 1, CPU_Gen_Num = 1, GPU_Gen_Num = 0;}
     else if (algo == 3) {info_gpu->use_new_algo = 1, CPU_Gen_Num = 0, GPU_Gen_Num = 1;}
-    else if (algo == 4) {info_cpu.use_GPU_version_generation_optimized = 1, CPU_Gen_Num = 1, GPU_Gen_Num = 0;}
-    else if (algo == 5) {info_gpu->use_new_algo = 1, CPU_Gen_Num = 0, GPU_Gen_Num = 1;}
-    else {
+    else if (algo == 4) {info_gpu->use_new_algo = 1, CPU_Gen_Num = 0, GPU_Gen_Num = 4;}
+    else if (algo == 5) {
+        info_cpu.use_2023WWW_generation_optimized = 1, info_gpu->use_new_algo = 1;
+        CPU_Gen_Num = 1, GPU_Gen_Num = 4;
+    } else {
         info_gpu->use_2023WWW_GPU_version = 1, CPU_Gen_Num = 0, GPU_Gen_Num = 1;
         if (upper_k == 4) return 0;
     }
@@ -384,7 +402,7 @@ int main (int argc, char** argv) {
     cudaMemGetInfo(&free_byte, &total_byte);
     printf("Device memory before: total %ld, free %ld\n", total_byte, free_byte);
     if (GPU_Gen_Num) {
-        info_gpu->destroy_L_cuda();
+        info_gpu->destroy_L_cuda(G_max);
     }
     csr_graph.destroy_csr_graph();
     // free(info_gpu);
@@ -474,8 +492,8 @@ int main (int argc, char** argv) {
     if (algo == 1) {algoname = "use_2023WWW_generation";}
     else if (algo == 2) {algoname = "use_2023WWW_generation_optimized";}
     else if (algo == 3) {algoname = "use_new_algo";}
-    else if (algo == 4) {algoname = "use_GPU_version_generation_optimized";}
-    else if (algo == 5) {algoname = "use_new_algo";}
+    else if (algo == 4) {algoname = "use_Hybrid_4GPU";}
+    else if (algo == 5) {algoname = "use_Hybrid_1CPU_4GPU";}
     else {algoname = "use_2023WWW_GPU_version";}
     
     out << algoname << "," << dataset << "," << upper_k << "," << time_generate_labels_total << "," 

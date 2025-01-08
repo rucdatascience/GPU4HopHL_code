@@ -42,7 +42,8 @@ public:
         // __threadfence();
     }
     __device__ void modify_min (const int vertex, const int hop, const int hop_cst, const int val) {
-        table[vertex * (hop_cst + 1) + hop] = min(table[vertex * (hop_cst + 1) + hop], val);
+        int x = vertex * (hop_cst + 1) + hop;
+        table[x] = min(table[x], val);
         // __threadfence();
     }
 
