@@ -1,5 +1,5 @@
-# ./build/test /home/pengchang/GPU4HSDL_EXP/new-data/git_web_ml/git_web.e 5 0 /home/pengchang/GPU4HSDL_EXP/new-data/git_web_ml/git_web.query /home/pengchang/GPU4HSDL_EXP/CPU_HopHL/Res/git_web.5.HSDL
 #!/bin/bash
+echo "æµ‹è¯•"
 
 rm -rf build
 mkdir build
@@ -8,69 +8,40 @@ cmake3 ..
 make
 cd ..
 
-# ÉèÖÃ²ÎÊı
-data_dir="/home/mdnd/data_exp_10"          # Êı¾İÎÄ¼ş¼ĞÂ·¾¶
-# output="/home/mdnd/Hybrid_Generation_Clean_EXP/result_Hybrid_4GPU_data_exp_0.csv"         # Êä³öÎÄ¼şÃû
-output="/home/mdnd/Hybrid_Generation_Clean_EXP/result_Hybrid_4GPU_data_exp_10.csv"         # Êä³öÎÄ¼şÃû
-# output="/home/mdnd/Hybrid_Generation_Clean_EXP/result_Hybrid_1CPU_data_exp_reddit.csv"         # Êä³öÎÄ¼şÃû
-# output="/home/mdnd/Hybrid_Generation_Clean_EXP/result_Hybrid_4GPU_data_exp_1.csv"
+# è®¾ç½®å®éªŒå‚æ•°
+data_dir="/home/mdnd/data_exp_10" # æ•°æ®æ–‡ä»¶å¤¹è·¯å¾„
+output="/home/mdnd/Hybrid_Generation_Clean_EXP/result_Hybrid_4GPU_data_exp_10.csv" # è¾“å‡ºæ–‡ä»¶å
 gmax="1000"
 thread="1000"
-# Çå¿ÕÒÑÓĞµÄ½á¹ûÎÄ¼ş²¢Ğ´Èë±íÍ·
 
-# ±éÀú new-data Ä¿Â¼ÖĞµÄÃ¿¸ö×ÓÄ¿Â¼
-# for iter in $(seq 1 1); do
-    # for dataset_dir in "$data_dir"/*; do
-    #     if [ -d "$dataset_dir" ]; then  # ¼ì²éÊÇ·ñÎªÄ¿Â¼
-    #         # »ñÈ¡Êı¾İ¼¯ÎÄ¼şºÍ²éÑ¯ÎÄ¼ş
-    #         dataset_file="$dataset_dir/*.e"          # Êı¾İ¼¯ÎÄ¼ş
-    #         # query_file="$dataset_dir/*.query"        # ²éÑ¯ÎÄ¼ş
-            
-
-    #         # ¼ì²éÊÇ·ñ´æÔÚÊı¾İ¼¯ÎÄ¼şºÍ²éÑ¯ÎÄ¼ş
-    #         if ls $dataset_file 1> /dev/null 2>&1; then
-    #             # ½«Êı¾İ¼¯ºÍ²éÑ¯ÎÄ¼şÂ·¾¶¾ßÌå»¯
-    #             dataset=$(ls $dataset_file)
-    #             # query_path=$(ls $query_file)
-
-    #             # ÔËĞĞ²âÊÔ
-    #             for algo in $(seq 1 2); do  # algo È¡ÖµÎª 0 ºÍ 1,Hybrid,GPU
-    #                 for k in $(seq 2 5); do  # upper_k ´Ó 2 µ½ 4
-    #                     echo "./build/bin/Test $dataset_file $k $algo $output 1"
-    #                     ./build/bin/Test "$dataset" "$k" "$algo" "$output" 1 # ÔËĞĞ C++ ³ÌĞò
-    #                 done
-    #             done
-    #         else
-    #             echo "Warning: Ä¿Â¼ $dataset_dir ÖĞÎ´ÕÒµ½ºÏÊÊµÄÊı¾İ¼¯ÎÄ¼ş»ò²éÑ¯ÎÄ¼ş£¬Ìø¹ı¸ÃÄ¿Â¼¡£"
-    #         fi
-    #     fi
-    # done
-# done
-for algo in $(seq 5 5); do  # algo È¡ÖµÎª1¡¢2¡¢3¡¢4¡¢5, CPU, CPU_opt, GPU, Hybrid_4GPU, Hybrid_CPU_GPU
-    for iter in $(seq 1 1); do
+# éå† new-data ç›®å½•ä¸­çš„æ¯ä¸ªå­ç›®å½•
+for algo in $(seq 5 5); do # algo å–å€¼ä¸º 1ã€2ã€3ã€4ã€5, CPU, CPU_opt, GPU, Hybrid_4GPU, Hybrid_CPU_GPU
+    for iter in $(seq 1 1); do # è¿­ä»£å‡ æ¬¡
         for dataset_dir in "$data_dir"/*; do
-            if [ -d "$dataset_dir" ]; then  # ¼ì²éÊÇ·ñÎªÄ¿Â¼
-                # »ñÈ¡Êı¾İ¼¯ÎÄ¼şºÍ²éÑ¯ÎÄ¼ş
-                dataset_file="$dataset_dir/*.e"          # Êı¾İ¼¯ÎÄ¼ş
-                # query_file="$dataset_dir/*.query"        # ²éÑ¯ÎÄ¼ş
+            if [ -d "$dataset_dir" ]; then # æ£€æŸ¥æ˜¯å¦ä¸ºç›®å½•
+
+                # è·å–æ•°æ®é›†æ–‡ä»¶å’ŒæŸ¥è¯¢æ–‡ä»¶
+                dataset_file="$dataset_dir/*.e" # æ•°æ®é›†æ–‡ä»¶
+                # query_file="$dataset_dir/*.query" # æŸ¥è¯¢æ–‡ä»¶
                 
-                # ¼ì²éÊÇ·ñ´æÔÚÊı¾İ¼¯ÎÄ¼şºÍ²éÑ¯ÎÄ¼ş
+                # æ£€æŸ¥æ˜¯å¦å­˜åœ¨æ•°æ®é›†æ–‡ä»¶å’ŒæŸ¥è¯¢æ–‡ä»¶
                 if ls $dataset_file 1> /dev/null 2>&1; then
-                    # ½«Êı¾İ¼¯ºÍ²éÑ¯ÎÄ¼şÂ·¾¶¾ßÌå»¯
+
+                    # å°†æ•°æ®é›†å’ŒæŸ¥è¯¢æ–‡ä»¶è·¯å¾„å…·ä½“åŒ–
                     dataset=$(ls $dataset_file)
                     # query_path=$(ls $query_file)
 
-                    # ÔËĞĞ²âÊÔ
-                    for k in $(seq 5 5); do  # upper_k ´Ó 2 µ½ 4
-                        echo "./build/bin/Test $dataset_file $k $algo $output $gmax $thread 1"
-                        ./build/bin/Test "$dataset" "$k" "$algo" "$output" "$gmax" "$thread" 1 # ÔËĞĞ C++ ³ÌĞò
+                    # è¿è¡Œæµ‹è¯•
+                    for upper_k in $(seq 5 5); do  # upper_k ä» 2 åˆ° 5
+                        echo "./build/bin/Test $dataset_file $upper_k $algo $output $gmax $thread 1"
+                        ./build/bin/Test "$dataset" "$upper_k" "$algo" "$output" "$gmax" "$thread" 1 # è¿è¡Œ C++ ç¨‹åº
                     done
                 else
-                    echo "Warning: Ä¿Â¼ $dataset_dir ÖĞÎ´ÕÒµ½ºÏÊÊµÄÊı¾İ¼¯ÎÄ¼ş»ò²éÑ¯ÎÄ¼ş£¬Ìø¹ı¸ÃÄ¿Â¼"
+                    echo "Warning: ç›®å½• $dataset_dir ä¸­æœªæ‰¾åˆ°åˆé€‚çš„æ•°æ®é›†æ–‡ä»¶æˆ–æŸ¥è¯¢æ–‡ä»¶ï¼Œè·³è¿‡è¯¥ç›®å½•"
                 fi
             fi
         done
     done
 done
 
-echo "²âÊÔÍê³É£¬½á¹ûÒÑĞ´Èë $output ÎÄ¼ş¡£"
+echo "æµ‹è¯•å®Œæˆï¼Œç»“æœå·²å†™å…¥ $output æ–‡ä»¶ã€‚"
