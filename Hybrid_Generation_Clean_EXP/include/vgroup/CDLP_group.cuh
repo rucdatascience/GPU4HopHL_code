@@ -17,11 +17,11 @@ struct group_union_unit {
 };
 std::set<group_union_unit> se;
 
-static void generate_Group_CDLP(graph_v_of_v<int> &instance_graph, std::vector<std::vector<int>> &groups, int MAX_GROUP_SIZE) {
+static void generate_Group_CDLP(graph_v_of_v<weight_type> &instance_graph, std::vector<std::vector<int>> &groups, int MAX_GROUP_SIZE) {
     printf("debug CDLP !!! \n");
     auto start = std::chrono::high_resolution_clock::now();
     // 将图转换为 CSR 格式
-    CSR_graph<int> csr = graph_v_of_v_to_CSR<int>(instance_graph);
+    CSR_graph<weight_type> csr = graph_v_of_v_to_CSR<weight_type>(instance_graph);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
     std::cout << "transform graph took " << duration.count() << " seconds." << std::endl;

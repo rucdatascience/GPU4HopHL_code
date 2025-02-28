@@ -13,9 +13,9 @@
 /* T队列中元素类型 */
 struct T_item {
     int vertex;
-    weight_type distance;
+    short distance;
 
-    __device__ __host__ T_item (int vertex, weight_type distance) : vertex(vertex), distance(distance) {}
+    __device__ __host__ T_item (int vertex, short distance) : vertex(vertex), distance(distance) {}
 
     __device__ __host__ T_item() {}
 
@@ -54,7 +54,7 @@ struct hop_constrained_two_hop_label_v3 {
 
     __device__ __host__ hop_constrained_two_hop_label_v3() {}
 
-    hop_constrained_two_hop_label_v3(const hop_constrained_two_hop_label_v3 &other) {
+    hop_constrained_two_hop_label_v3 (const hop_constrained_two_hop_label_v3 &other) {
         hub_vertex = other.hub_vertex;
         hop = other.hop;
         distance = other.distance;

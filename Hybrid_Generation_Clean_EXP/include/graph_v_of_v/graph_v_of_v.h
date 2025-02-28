@@ -79,6 +79,7 @@ public:
 	inline int search_adjv_by_weight(int, weight_type); // return first e2 such that w(e1,e2) = ec; if there is no such e2, return -1
 	inline void txt_save(std::string);
 	inline void txt_read(std::string);
+	inline void txt_read_v2(std::string);
 	inline void binary_save(std::string);
 	inline void binary_read(std::string);
     inline ARRAY_graph<weight_type> toARRAY();
@@ -294,42 +295,42 @@ void graph_v_of_v<weight_type>::txt_read(std::string save_name) {
 	}
 }
 
-// template <typename weight_type>
-// void graph_v_of_v<weight_type>::txt_read(std::string save_name) {
+template <typename weight_type>
+void graph_v_of_v<weight_type>::txt_read_v2(std::string save_name) {
 
-// 	graph_v_of_v<weight_type>::clear();
+	graph_v_of_v<weight_type>::clear();
 
-// 	std::string line_content;
-// 	std::ifstream myfile(save_name); // open the file
-// 	if (myfile.is_open()) // if the file is opened successfully
-// 	{
-// 		while (getline(myfile, line_content)) // read file line by line
-// 		{
-// 			std::vector<std::string> Parsed_content = parse_string(line_content, " ");
+	std::string line_content;
+	std::ifstream myfile(save_name); // open the file
+	if (myfile.is_open()) // if the file is opened successfully
+	{
+		while (getline(myfile, line_content)) // read file line by line
+		{
+			std::vector<std::string> Parsed_content = parse_string(line_content, " ");
 
-// 			if (!Parsed_content[0].compare("|V|=")) // when it's equal, compare returns 0
-// 			{
-// 				ADJs.resize(std::stoi(Parsed_content[1]));
-// 			}
-// 			else if (!Parsed_content[0].compare("Edge"))
-// 			{
-// 				int v1 = std::stoi(Parsed_content[1]);
-// 				int v2 = std::stoi(Parsed_content[2]);
-// 				weight_type ec = std::stod(Parsed_content[3]);
-// 				graph_v_of_v<weight_type>::add_edge(v1, v2, ec);
-// 			}
-// 		}
+			if (!Parsed_content[0].compare("|V|=")) // when it's equal, compare returns 0
+			{
+				ADJs.resize(std::stoi(Parsed_content[1]));
+			}
+			else if (!Parsed_content[0].compare("Edge"))
+			{
+				int v1 = std::stoi(Parsed_content[1]);
+				int v2 = std::stoi(Parsed_content[2]);
+				weight_type ec = std::stod(Parsed_content[3]);
+				graph_v_of_v<weight_type>::add_edge(v1, v2, ec);
+			}
+		}
 
-// 		myfile.close(); //close the file
-// 	}
-// 	else
-// 	{
-// 		std::cout << "Unable to open file " << save_name << std::endl
-// 			<< "Please check the file location or file name." << std::endl; // throw an error message
-// 		getchar(); // keep the console window
-// 		exit(1); // end the program
-// 	}
-// }
+		myfile.close(); //close the file
+	}
+	else
+	{
+		std::cout << "Unable to open file " << save_name << std::endl
+			<< "Please check the file location or file name." << std::endl; // throw an error message
+		getchar(); // keep the console window
+		exit(1); // end the program
+	}
+}
 
 template <typename weight_type>
 void graph_v_of_v<weight_type>::binary_save(std::string save_name) {

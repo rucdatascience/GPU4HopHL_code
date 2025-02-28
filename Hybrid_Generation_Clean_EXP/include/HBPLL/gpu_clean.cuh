@@ -49,3 +49,14 @@ __global__ void clean_kernel_v2 (int V, int K, int tc, int start_id, int end_id,
 void gpu_clean_init (graph_v_of_v<int> &input_graph, vector<vector<hop_constrained_two_hop_label>> &input_L, hop_constrained_case_info_v2 * info_gpu, Graph_pool<int>& graph_pool, int tc, int K);
 
 void gpu_clean (graph_v_of_v<int>& input_graph, hop_constrained_case_info_v2 * info_gpu, vector<vector<hop_constrained_two_hop_label>>& res, int tc, int nid_vec_id);
+
+void gpu_clean_init_v2 (graph_v_of_v<int> &input_graph, vector<vector<hop_constrained_two_hop_label>> &input_L, hop_constrained_case_info_v2 * info_gpu, Graph_pool<int>& graph_pool, int tc, int K);
+
+void gpu_clean_v2 (graph_v_of_v<int> &input_graph, hop_constrained_case_info_v2 * info_gpu, 
+vector<vector<hop_constrained_two_hop_label>> &res, int thread_num);
+
+void gpu_clean_init_v3 (graph_v_of_v<int> &input_graph, const vector<vector<hop_constrained_two_hop_label>> &use_L,
+vector<vector<hop_constrained_two_hop_label>> &clean_L, vector<vector<long long>> &label_id_2to1, hop_constrained_case_info_v2 * info_gpu, Graph_pool<int>& graph_pool, int tc, int K);
+
+void gpu_clean_v3 (graph_v_of_v<int> &input_graph, hop_constrained_case_info_v2 * info_gpu, 
+vector<vector<hop_constrained_two_hop_label>> &res, vector<int> &check_tot, int thread_num);

@@ -920,8 +920,9 @@ vector<vector<hop_constrained_two_hop_label> >& LL, vector<int>& nid_vec, int th
 
 	int nid_size = nid_vec.size();
 	for (auto &v: nid_vec) {
+
 		// int x = nid_vec[v];
-		// printf("%d nid_vec %d\n", v, v);
+		printf("%d nid_vec %d\n", v, v);
 		results.emplace_back(pool.enqueue(
 			[v, &L] { // pass const type value j to thread; [] can be empty
 				mtx_599[max_N_ID_for_mtx_599 - 1].lock();

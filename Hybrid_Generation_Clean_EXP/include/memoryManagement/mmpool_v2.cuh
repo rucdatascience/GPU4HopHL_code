@@ -135,7 +135,7 @@ template <typename T> __device__ int mmpool_v2<T>::get_new_block(const int &bloc
     while (blocked) {
         if (atomicCAS(&this->lock, 0, 1) == 0) {
             if (last_empty_block_idx >= num_blocks) {
-                printf("error with blocks num!\b");
+                printf("error with blocks num!\n");
             }
             blocks_state[last_empty_block_idx] = 0;
             blocks_state[block_idx] = last_empty_block_idx;

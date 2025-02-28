@@ -13,18 +13,20 @@
 
 class hop_constrained_case_info_v2 {
 public:
-// for generation
+    // for generation
     /* labels */
-    mmpool_v2<hub_type> *mmpool_labels = NULL;
+    mmpool_v2<long long> *mmpool_labels = NULL;
     mmpool_v2<T_item> *mmpool_T0 = NULL;
     mmpool_v2<T_item> *mmpool_T1 = NULL;
 
-    cuda_vector_v2<hub_type> *L_cuda = NULL; // gpu res
+    // 64bits, hub_vertex 24bits, parent_vertex 24bits, hop 3bits, distance 10bits
+    cuda_vector_v2<long long> *L_cuda = NULL; // gpu res
     cuda_vector_v2<T_item> *T0 = NULL; // T0
     cuda_vector_v2<T_item> *T1 = NULL; // T1
 
-    cuda_hashTable_v2<weight_type> *L_hash;
-    cuda_hashTable_v2<weight_type> *D_hash;
+    // hash for distance
+    cuda_hashTable_v2<short> *L_hash;
+    cuda_hashTable_v2<short> *D_hash;
 
     int **nid;
     int *nid_size;
@@ -34,8 +36,8 @@ public:
     
     int *Num_T; // Num_T, Test use
     int *Num_L;
-    std::pair<int, int> *T_push_back;
-    std::pair<int, int> *L_push_back;
+    std::pair<int, short> *T_push_back;
+    std::pair<int, short> *L_push_back;
 
     /*hop bounded*/
     int thread_num = 1;
@@ -69,9 +71,9 @@ public:
 
         // Create three memory pools
         // The first memory pool is used to store labels
-        cudaMallocManaged(&mmpool_labels, sizeof(mmpool_v2<hub_type>));
+        cudaMallocManaged(&mmpool_labels, sizeof(mmpool_v2<long long>));
         cudaDeviceSynchronize();
-        new (mmpool_labels) mmpool_v2<hub_type> (V, max((long long)V, (long long) G_max * V * (hop_cst) / 2 / nodes_per_block));
+        new (mmpool_labels) mmpool_v2<long long> (V, max((long long)V, (long long) G_max * V * (hop_cst) / 2 / nodes_per_block));
         cudaDeviceSynchronize();
 
         // The second memory pool is used to store T0
@@ -87,10 +89,10 @@ public:
         cudaDeviceSynchronize();
 
         // Allocate the L_cuda memory pool
-        cudaMallocManaged(&L_cuda, (long long) V * sizeof(cuda_vector_v2<hub_type>)); // Allocate n cuda_vector Pointers
+        cudaMallocManaged(&L_cuda, (long long) V * sizeof(cuda_vector_v2<long long>)); // Allocate n cuda_vector Pointers
         cudaDeviceSynchronize();
         for (int i = 0; i < V; i++) {
-            new (L_cuda + i) cuda_vector_v2<hub_type> (mmpool_labels, i, (long long) G_max * hop_cst / nodes_per_block + 1);
+            new (L_cuda + i) cuda_vector_v2<long long> (mmpool_labels, i, (long long) G_max * hop_cst / nodes_per_block + 1);
         }
         cudaDeviceSynchronize();
 
@@ -111,18 +113,18 @@ public:
         cudaDeviceSynchronize();
 
         // 准备 L_hash
-        cudaMallocManaged(&L_hash, (long long) thread_num * sizeof(cuda_hashTable_v2<weight_type>));
+        cudaMallocManaged(&L_hash, (long long) thread_num * sizeof(cuda_hashTable_v2<short>));
         cudaDeviceSynchronize();
         for (int i = 0; i < thread_num; i++) {
-            new (L_hash + i) cuda_hashTable_v2 <weight_type> ((long long) G_max * (hop_cst + 1));
+            new (L_hash + i) cuda_hashTable_v2 <short> ((long long) G_max * (hop_cst + 1));
         }
         cudaDeviceSynchronize();
 
         // 准备 D_hashTable
-        cudaMallocManaged(&D_hash, (long long) thread_num * sizeof(cuda_hashTable_v2<weight_type>));
+        cudaMallocManaged(&D_hash, (long long) thread_num * sizeof(cuda_hashTable_v2<short>));
         cudaDeviceSynchronize();
         for (int i = 0; i < thread_num; i++) {
-            new (D_hash + i) cuda_hashTable_v2 <weight_type> (V);
+            new (D_hash + i) cuda_hashTable_v2 <short> (V);
         }
         cudaDeviceSynchronize();
         
@@ -187,7 +189,7 @@ public:
     // destructor
     __host__ void destroy_L_cuda(int G_max) {
         for (int i = 0; i < L_size; ++i) {
-            L_cuda[i].~cuda_vector_v2 <hub_type> ();
+            L_cuda[i].~cuda_vector_v2 <long long> ();
         }
         cudaFree(L_cuda);
         
@@ -201,8 +203,8 @@ public:
         cudaFree(T1);
         
         for (int i = 0; i < thread_num; ++i) {
-            L_hash[i].~cuda_hashTable_v2 <weight_type> ();
-            D_hash[i].~cuda_hashTable_v2 <weight_type> ();
+            L_hash[i].~cuda_hashTable_v2 <short> ();
+            D_hash[i].~cuda_hashTable_v2 <short> ();
         }
         
         for (int i = 0; i < Distributed_Graph_Num; ++ i) {
@@ -230,15 +232,19 @@ public:
         cudaFree(mmpool_T1);
     }
 
-// for clean
+    // for clean_v1
     long long *L_start = nullptr;
     long long *L_end = nullptr;
     int *node_id = nullptr;
     int *nid_to_tid = nullptr;
-    hop_constrained_two_hop_label *L = nullptr; // label on gpu
+    long long *L = nullptr; // label on gpu
     int *mark = nullptr; // mark the label clean state
     int *hash_array = nullptr;
+    // int *L_size = nullptr;
 
+    // for clean_v2
+    int *in_L = nullptr;
+    long long *L2 = nullptr; // label on gpu
 };
 
 #endif
